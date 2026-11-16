@@ -24,7 +24,7 @@ import { colors, fonts, chartPalette } from '@/lib/theme';
 
 const TooltipBox = styled.div`
   background: #0E241D;
-  color: #F9F6EE;
+  color: #F6F6FF;
   border-radius: 9px;
   padding: 9px 12px;
   box-shadow: 0 14px 30px -14px rgba(0, 0, 0, 0.5);

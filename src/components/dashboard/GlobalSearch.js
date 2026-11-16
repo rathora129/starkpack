@@ -169,10 +169,10 @@ const NoResults = styled.div`
 `;
 
 const itemTypeStyles = {
-  Page: { bg: '#EFF5F2', fg: '#17493B' },
+  Page: { bg: '#EFF5F2', fg: '#1B1464' },
   Customer: { bg: '#E7F3EC', fg: '#2E7D5B' },
   Order: { bg: '#E8F1F6', fg: '#376C8A' },
-  Lead: { bg: '#FBF1E3', fg: '#9C5E27' },
+  Lead: { bg: '#FBF1E3', fg: '#B31420' },
   Quote: { bg: '#F1F0EA', fg: '#5C655F' },
   Product: { bg: '#F4E6D6', fg: '#7C491F' },
 };

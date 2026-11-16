@@ -2,6 +2,7 @@
 
 import { create } from 'zustand';
 import { PRODUCTION_FLOW } from '@/lib/services';
+import { buildLeadAttribution, normalizeSource } from '@/lib/attribution';
 import {
   leads as seedLeads,
   customers as seedCustomers,
@@ -47,6 +48,7 @@ import {
   reportSchedulesSeed,
   leadFollowUpSeed,
 } from '@/data/business';
+import { pageSectionsSeed } from '@/data/pageSections';
 import {
   ABC_CUSTOMER_ID,
   ABC_CAMPAIGN_ID,
@@ -398,28 +400,34 @@ const seqs = {
 const BASE_SEQS = { ...seqs };
 
 const buildInitialData = () => {
-  const leads = [abcLead, ...seedLeads].map((lead) => ({
-    ...lead,
-    campaignId: CAMPAIGN_BY_LEAD[lead.id] ?? lead.campaignId ?? null,
-    followUps: clone(leadFollowUpSeed[lead.id] || abcLeadFollowUps[lead.id] || []),
-    notesLog: [
-      {
-        id: `${lead.id}-N1`,
-        note: lead.notes,
-        date: String(lead.createdAt).slice(0, 10),
-        by: lead.owner,
-      },
-    ],
-    history: [
-      {
-        id: `${lead.id}-H1`,
-        type: 'Created',
-        text: `Enquiry captured from ${lead.source.toLowerCase()}`,
-        date: String(lead.createdAt).slice(0, 10),
-        by: lead.owner,
-      },
-    ],
-  }));
+  const leads = [abcLead, ...seedLeads].map((lead) => {
+    const campaignId = CAMPAIGN_BY_LEAD[lead.id] ?? lead.campaignId ?? null;
+    const campaign = seedCampaigns.find((entry) => entry.id === campaignId) || null;
+    return {
+      ...lead,
+      ...buildLeadAttribution(lead, campaign),
+      campaignId,
+      assignedTo: lead.assignedTo || lead.owner,
+      followUps: clone(leadFollowUpSeed[lead.id] || abcLeadFollowUps[lead.id] || []),
+      notesLog: [
+        {
+          id: `${lead.id}-N1`,
+          note: lead.notes,
+          date: String(lead.createdAt).slice(0, 10),
+          by: lead.owner,
+        },
+      ],
+      history: [
+        {
+          id: `${lead.id}-H1`,
+          type: 'Created',
+          text: `Enquiry captured from ${lead.source.toLowerCase()}`,
+          date: String(lead.createdAt).slice(0, 10),
+          by: lead.owner,
+        },
+      ],
+    };
+  });
 
   const customers = clone([...seedCustomers, abcCustomer]).map((customer) => ({ ...customer, status: customer.status || 'Active' }));
 
@@ -464,6 +472,21 @@ const buildInitialData = () => {
           : payment,
       delivery: buildDelivery(order),
       timeline: buildOrderTimeline(order),
+    };
+  });
+
+  const confirmedStatuses = ['Confirmed', 'Prepress', 'In production', 'QC', 'Dispatched', 'Delivered', 'Completed'];
+  const leadsWithValues = leads.map((lead) => {
+    const quote = lead.quoteId ? quotes.find((entry) => entry.id === lead.quoteId) : null;
+    const order =
+      orders.find((entry) => entry.quoteId && entry.quoteId === lead.quoteId) ||
+      orders.find((entry) => entry.customer === lead.company);
+    const confirmed = order && confirmedStatuses.includes(order.status) ? order.value : 0;
+    return {
+      ...lead,
+      quoteValue: quote ? quote.total : 0,
+      confirmedOrderValue: confirmed,
+      sourceChannel: lead.sourceChannel || normalizeSource(lead.source),
     };
   });
 
@@ -515,7 +538,7 @@ const buildInitialData = () => {
   });
 
   return {
-    leads,
+    leads: leadsWithValues,
     contacts,
     customers,
     quotes,
@@ -544,7 +567,10 @@ const buildInitialData = () => {
     agencyBriefs: clone(seedAgencyBriefs),
     campaignExpenses: clone(campaignExpensesSeed),
     cms: clone(cmsSeed),
-    cmsPages: clone(cmsPagesSeed),
+    cmsPages: clone(cmsPagesSeed).map((page) => ({
+      ...page,
+      sections: clone(pageSectionsSeed[page.slug] || []),
+    })),
     cmsBanners: clone(cmsBannersSeed),
     cmsServices: clone(cmsServicesSeed),
     cmsTestimonials: clone(cmsTestimonialsSeed),
@@ -605,6 +631,15 @@ export const useDemoStore = create((set, get) => ({
   addLead: (payload) => {
     seqs.lead += 1;
     const id = `LD-${seqs.lead}`;
+    const attribution = buildLeadAttribution(
+      {
+        ...payload,
+        source: payload.source || payload.sourceChannel || 'Website',
+        sourceDetail: payload.sourceDetail || payload.sourceChannel || payload.source || 'Website',
+        originalSource: payload.originalSource || payload.source || payload.sourceChannel || 'Website',
+      },
+      null
+    );
     const lead = {
       id,
       company: payload.company || 'New enquiry',
@@ -614,11 +649,15 @@ export const useDemoStore = create((set, get) => ({
       phone: payload.phone || '',
       city: payload.city || '—',
       source: payload.source || 'Website',
+      ...attribution,
       product: payload.product || 'Custom packaging',
       quantity: payload.quantity || 'To be confirmed',
       value: Number(payload.value) || 0,
+      quoteValue: Number(payload.quoteValue) || 0,
+      confirmedOrderValue: 0,
       stage: payload.stage || 'New',
       owner: payload.owner || 'Neha Joshi',
+      assignedTo: payload.assignedTo || payload.owner || 'Neha Joshi',
       score: Number(payload.score) || 72,
       campaignId: payload.campaignId || null,
       createdAt: nowISO(),
@@ -651,7 +690,25 @@ export const useDemoStore = create((set, get) => ({
 
   updateLead: (id, patch) =>
     set((state) => ({
-      leads: state.leads.map((lead) => (lead.id === id ? { ...lead, ...patch } : lead)),
+      leads: state.leads.map((lead) => {
+        if (lead.id !== id) return lead;
+        return {
+          ...lead,
+          ...patch,
+          assignedTo: patch.owner || lead.assignedTo,
+          source: lead.source,
+          sourceChannel: lead.sourceChannel,
+          originalSource: lead.originalSource,
+          sourceDetail: lead.sourceDetail,
+          campaignName: lead.campaignName,
+          utmSource: lead.utmSource,
+          utmMedium: lead.utmMedium,
+          utmCampaign: lead.utmCampaign,
+          utmContent: lead.utmContent,
+          landingPage: lead.landingPage,
+          referrer: lead.referrer,
+        };
+      }),
     })),
 
   deleteLead: (id) =>
@@ -1015,7 +1072,9 @@ export const useDemoStore = create((set, get) => ({
   recordOrderPayment: (id, amount, method = 'NEFT') => {
     const order = get().orders.find((entry) => entry.id === id);
     if (!order) return null;
-    const paid = Math.min(order.value, order.payment.paid + Number(amount));
+    const applied = Math.min(Math.max(0, Number(amount) || 0), Math.max(0, order.value - order.payment.paid));
+    if (!applied) return null;
+    const paid = order.payment.paid + applied;
     const paymentStatus = paid >= order.value ? 'Paid' : 'Part paid';
     seqs.transaction += 1;
     const transaction = {
@@ -1024,7 +1083,7 @@ export const useDemoStore = create((set, get) => ({
       type: 'Income',
       category: 'Customer receipt',
       description: `${order.customer} · payment against ${order.id}`,
-      amount: Number(amount),
+      amount: applied,
       reference: order.id,
       status: 'Cleared',
     };
@@ -1040,10 +1099,10 @@ export const useDemoStore = create((set, get) => ({
                 paymentMethod: method,
                 payments: [
                   ...(entry.payment.payments || []),
-                  { id: uid(`${id}-P`), amount: Number(amount), date: today(), method, reference: `RCPT-${seqs.transaction}` },
+                  { id: uid(`${id}-P`), amount: applied, date: today(), method, reference: `RCPT-${seqs.transaction}` },
                 ],
               },
-              timeline: [...entry.timeline, { id: uid(`${id}-TL`), label: 'Payment received', note: `${method} · ₹${Number(amount).toLocaleString('en-IN')}`, date: today(), done: true }],
+              timeline: [...entry.timeline, { id: uid(`${id}-TL`), label: 'Payment received', note: `${method} · ₹${applied.toLocaleString('en-IN')}`, date: today(), done: true }],
             }
           : entry
       ),
@@ -1567,7 +1626,9 @@ export const useDemoStore = create((set, get) => ({
     set((state) => {
       const invoice = state.invoices.find((entry) => entry.id === id);
       if (!invoice) return {};
-      const paid = Math.min(invoice.amount, invoice.paid + Number(amount));
+      const applied = Math.min(Math.max(0, Number(amount) || 0), Math.max(0, invoice.amount - invoice.paid));
+      if (!applied) return {};
+      const paid = invoice.paid + applied;
       seqs.transaction += 1;
       const transaction = {
         id: `TX-${seqs.transaction}`,
@@ -1575,7 +1636,7 @@ export const useDemoStore = create((set, get) => ({
         type: 'Income',
         category: 'Customer receipt',
         description: `${invoice.customer} · payment against ${invoice.id}`,
-        amount: Number(amount),
+        amount: applied,
         reference: invoice.id,
         status: 'Cleared',
       };
@@ -1821,6 +1882,169 @@ export const useDemoStore = create((set, get) => ({
     }));
   },
 
+  /* ----------------------- Page section editor ----------------------- */
+
+  savePageSection: (pageId, payload) => {
+    let saved = null;
+    set((state) => ({
+      cmsPages: state.cmsPages.map((page) => {
+        if (page.id !== pageId) return page;
+        const sections = [...(page.sections || [])];
+        if (payload.id) {
+          const index = sections.findIndex((item) => item.id === payload.id);
+          if (index >= 0) {
+            saved = { ...sections[index], ...payload };
+            sections[index] = saved;
+          }
+        } else {
+          saved = {
+            ...payload,
+            id: uid('PS'),
+            order: sections.length + 1,
+            enabled: payload.enabled !== false,
+          };
+          sections.push(saved);
+        }
+        return { ...page, sections, updated: today() };
+      }),
+    }));
+
+    if (saved) {
+      const page = get().cmsPages.find((item) => item.id === pageId);
+      if (page?.slug === '/') {
+        const sections = page.sections || [];
+        const hero = sections.find((item) => item.key === 'hero');
+        if (hero) {
+          get().saveCms('home', {
+            headline: hero.title || '',
+            subcopy: hero.body || '',
+            eyebrow: hero.kicker || '',
+            primaryCta: hero.ctaLabel || 'Request a quote',
+          });
+        }
+        const byKey = Object.fromEntries(sections.map((item) => [item.key, item]));
+        get().saveCms('home', {
+          showStats: byKey.clients ? byKey.clients.enabled !== false : true,
+          showPortfolio: byKey.portfolio ? byKey.portfolio.enabled !== false : true,
+          showTestimonials: byKey.testimonials ? byKey.testimonials.enabled !== false : true,
+        });
+      }
+    }
+    return saved;
+  },
+
+  deletePageSection: (pageId, sectionId) =>
+    set((state) => ({
+      cmsPages: state.cmsPages.map((page) =>
+        page.id === pageId
+          ? {
+              ...page,
+              sections: (page.sections || [])
+                .filter((section) => section.id !== sectionId)
+                .map((section, index) => ({ ...section, order: index + 1 })),
+              updated: today(),
+            }
+          : page
+      ),
+    })),
+
+  duplicatePageSection: (pageId, sectionId) => {
+    let copy = null;
+    set((state) => ({
+      cmsPages: state.cmsPages.map((page) => {
+        if (page.id !== pageId) return page;
+        const index = (page.sections || []).findIndex((section) => section.id === sectionId);
+        if (index < 0) return page;
+        const source = page.sections[index];
+        const baseKey = `${source.key || 'section'}-copy`;
+        let key = baseKey;
+        let suffix = 2;
+        while ((page.sections || []).some((section) => section.key === key)) {
+          key = `${baseKey}-${suffix}`;
+          suffix += 1;
+        }
+        copy = { ...source, id: uid('PS'), key, title: `${source.title} (copy)` };
+        const sections = [...page.sections];
+        sections.splice(index + 1, 0, copy);
+        return {
+          ...page,
+          sections: sections.map((section, position) => ({ ...section, order: position + 1 })),
+          updated: today(),
+        };
+      }),
+    }));
+    return copy;
+  },
+
+  togglePageSection: (pageId, sectionId) =>
+    set((state) => ({
+      cmsPages: state.cmsPages.map((page) =>
+        page.id === pageId
+          ? {
+              ...page,
+              sections: (page.sections || []).map((section) =>
+                section.id === sectionId ? { ...section, enabled: section.enabled === false } : section
+              ),
+              updated: today(),
+            }
+          : page
+      ),
+    })),
+
+  movePageSection: (pageId, sectionId, direction) =>
+    set((state) => ({
+      cmsPages: state.cmsPages.map((page) => {
+        if (page.id !== pageId) return page;
+        const sections = [...(page.sections || [])];
+        const index = sections.findIndex((section) => section.id === sectionId);
+        const target = index + direction;
+        if (index < 0 || target < 0 || target >= sections.length) return page;
+        [sections[index], sections[target]] = [sections[target], sections[index]];
+        return {
+          ...page,
+          sections: sections.map((section, position) => ({ ...section, order: position + 1 })),
+          updated: today(),
+        };
+      }),
+    })),
+
+  reorderPageSections: (pageId, sectionId, targetIndex) =>
+    set((state) => ({
+      cmsPages: state.cmsPages.map((page) => {
+        if (page.id !== pageId) return page;
+        const sections = [...(page.sections || [])];
+        const index = sections.findIndex((section) => section.id === sectionId);
+        if (index < 0 || targetIndex < 0 || targetIndex >= sections.length || index === targetIndex) return page;
+        const [moved] = sections.splice(index, 1);
+        sections.splice(targetIndex, 0, moved);
+        return {
+          ...page,
+          sections: sections.map((section, position) => ({ ...section, order: position + 1 })),
+          updated: today(),
+        };
+      }),
+    })),
+
+  duplicateCmsPage: (pageId) => {
+    let copy = null;
+    set((state) => {
+      const page = state.cmsPages.find((item) => item.id === pageId);
+      if (!page) return {};
+      copy = {
+        ...page,
+        id: uid('PG'),
+        title: `${page.title} copy`,
+        slug: page.slug === '/' ? '/p/home-copy' : `${page.slug}-copy`,
+        type: 'Custom',
+        status: 'Draft',
+        sections: (page.sections || []).map((section) => ({ ...section, id: uid('PS') })),
+        updated: today(),
+      };
+      return { cmsPages: [copy, ...state.cmsPages] };
+    });
+    return copy;
+  },
+
   /* ------------------------ Landing pages ----------------------- */
 
   addLandingPage: (payload) => {
@@ -1970,6 +2194,15 @@ export const useDemoStore = create((set, get) => ({
       phone: values.phone,
       city: values.city || '—',
       source: `Landing page · ${utmSource}`,
+      sourceChannel: 'Landing Page',
+      sourceDetail: `Landing page ${page.slug || page.title} · ${utmSource}`,
+      landingPage: page.slug || page.title,
+      utmSource,
+      utmMedium: values.utmMedium || values.utm_medium || page.utm?.medium || 'campaign',
+      utmCampaign: values.utmCampaign || values.utm_campaign || page.utm?.campaign || page.campaign || '—',
+      utmContent: values.utmContent || values.utm_content || '—',
+      referrer: values.referrer || '—',
+      campaignName: page.title,
       product: page.title,
       quantity: values.quantity || 'To be confirmed',
       value: Number(values.value) || 0,
@@ -2130,9 +2363,16 @@ export const useDemoStore = create((set, get) => ({
       });
     }
 
+    const acceptedLead =
+      state.leads.find((lead) => lead.id === quote.leadId) ||
+      state.leads.find((lead) => lead.quoteId === quote.id) ||
+      state.leads
+        .filter((lead) => lead.company === quote.customer && !['Won', 'Lost'].includes(lead.stage))
+        .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')))[0];
+
     set((current) => ({
       leads: current.leads.map((lead) =>
-        lead.company === quote.customer
+        lead.id === acceptedLead?.id
           ? {
               ...lead,
               stage: 'Won',

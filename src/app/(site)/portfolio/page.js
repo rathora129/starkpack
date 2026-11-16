@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { ArrowRight, ArrowUpRight, Quote } from 'lucide-react';
 import { portfolio, portfolioCategories, testimonials } from '@/data/catalog';
 import { colors, fonts, radii, shadows, transitions } from '@/lib/theme';
+import { usePageSections } from '@/hooks/usePageSections';
 import {
   Container,
   Section,
@@ -21,6 +22,7 @@ import {
   Pill,
   Grid,
 } from '@/components/site/ui';
+import { CmsPageFlow, CmsSection } from '@/components/site/CmsPageFlow';
 import { AppModal } from '@/components/ui/Overlay';
 
 const Tabs = styled.div`
@@ -35,7 +37,7 @@ const Tab = styled.button`
   border-radius: ${radii.pill};
   border: 1px solid ${({ $active }) => ($active ? colors.forest : colors.line)};
   background: ${({ $active }) => ($active ? colors.forest : 'transparent')};
-  color: ${({ $active }) => ($active ? '#F9F6EE' : colors.muted)};
+  color: ${({ $active }) => ($active ? '#F6F6FF' : colors.muted)};
   font-family: ${fonts.sans};
   font-size: 11.5px;
   font-weight: 700;
@@ -43,7 +45,7 @@ const Tab = styled.button`
 
   &:hover {
     border-color: ${colors.forest};
-    color: ${({ $active }) => ($active ? '#F9F6EE' : colors.forest)};
+    color: ${({ $active }) => ($active ? '#F6F6FF' : colors.forest)};
   }
 `;
 
@@ -257,6 +259,12 @@ const ModalActions = styled.div`
 `;
 
 export default function PortfolioPage() {
+  const { section } = usePageSections('/portfolio');
+  const hero = section('hero', {
+    kicker: 'Selected work',
+    title: 'Packaging that moved a number.',
+    body: 'Fewer damaged parcels, lower cost per order, faster shelf rollouts, stronger unboxing. Each project below started with a commercial problem and a blank dieline.',
+  });
   const [category, setCategory] = useState('All');
   const [selectedId, setSelectedId] = useState(null);
 
@@ -269,6 +277,8 @@ export default function PortfolioPage() {
 
   return (
     <>
+      <CmsPageFlow slug="/portfolio" knownKeys={['hero', 'cases', 'results']}>
+      <CmsSection sectionKey="hero">
       <PageIntro>
         <Container>
           <Breadcrumb>
@@ -276,12 +286,9 @@ export default function PortfolioPage() {
             <span>/</span>
             Portfolio
           </Breadcrumb>
-          <Kicker>Selected work</Kicker>
-          <IntroTitle>Packaging that moved a number.</IntroTitle>
-          <IntroLede>
-            Fewer damaged parcels, lower cost per order, faster shelf rollouts, stronger unboxing. Each project
-            below started with a commercial problem and a blank dieline.
-          </IntroLede>
+          <Kicker>{hero.kicker}</Kicker>
+          <IntroTitle>{hero.title}</IntroTitle>
+          <IntroLede>{hero.body}</IntroLede>
           <div style={{ marginTop: 26, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
             <Cta href="/request-a-quote" variant="primary" size="md">
               Start a project <ArrowRight size={14} />
@@ -292,7 +299,9 @@ export default function PortfolioPage() {
           </div>
         </Container>
       </PageIntro>
+      </CmsSection>
 
+      <CmsSection sectionKey="cases">
       <Section>
         <Container>
           <Tabs role="group" aria-label="Filter portfolio by category">
@@ -350,7 +359,9 @@ export default function PortfolioPage() {
           </QuoteBand>
         </Container>
       </Section>
+      </CmsSection>
 
+      <CmsSection sectionKey="results">
       <Section $tone="paper" $tight>
         <Container>
           <CTABand>
@@ -367,6 +378,8 @@ export default function PortfolioPage() {
           </CTABand>
         </Container>
       </Section>
+      </CmsSection>
+      </CmsPageFlow>
 
       <AppModal
         open={Boolean(selected)}

@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { ArrowRight, ArrowUpRight, Check, Gauge, Factory as FactoryIcon } from 'lucide-react';
 import { capabilities, machinery, facilityStats, qualityMetrics } from '@/data/catalog';
 import { colors, fonts, radii, shadows, transitions } from '@/lib/theme';
+import { usePageSections } from '@/hooks/usePageSections';
 import {
   Container,
   Section,
@@ -26,6 +27,7 @@ import {
   IconBadge,
   SiteIcon,
 } from '@/components/site/ui';
+import { CmsPageFlow, CmsSection } from '@/components/site/CmsPageFlow';
 
 const CapGrid = styled.div`
   display: grid;
@@ -127,7 +129,7 @@ const MachineHead = styled.div`
   grid-template-columns: 1.4fr 1fr 0.85fr;
   gap: 16px;
   padding: 12px 18px;
-  background: #FBFAF6;
+  background: #FAFAFD;
   border-bottom: 1px solid ${colors.lineSoft};
   font-size: 9px;
   font-weight: 800;
@@ -153,7 +155,7 @@ const MachineRow = styled.div`
   }
 
   &:hover {
-    background: #FBFAF6;
+    background: #FAFAFD;
   }
 
   strong {
@@ -243,8 +245,26 @@ const Quote = styled.blockquote`
 `;
 
 export default function CapabilitiesPage() {
+  const { section } = usePageSections('/capabilities');
+  const hero = section('hero', {
+    kicker: 'Manufacturing',
+    title: 'Manufacturing that stays inside your control.',
+    body: 'Design, corrugating, offset print, die-cutting, gluing and dispatch across three plants — with one quality system and one standard for colour.',
+  });
+  const stepsSection = section('steps', {
+    kicker: 'Capabilities',
+    title: 'Every step owned, measured and repeatable.',
+    body: 'From the first structural concept to the pallet leaving the dock, each capability is staffed, calibrated and documented.',
+  });
+  const machinerySection = section('machinery', {
+    kicker: 'Plant floor',
+    title: 'Machinery selected for tolerance, not brochure appeal.',
+    body: 'Rated capacities below are production figures, not peak laboratory numbers.',
+  });
+
   return (
-    <>
+    <CmsPageFlow slug="/capabilities" knownKeys={['hero', 'roof', 'steps', 'machinery', 'testing', 'capacity']}>
+      <CmsSection sectionKey="hero">
       <PageIntro>
         <Container>
           <Breadcrumb>
@@ -252,12 +272,9 @@ export default function CapabilitiesPage() {
             <span>/</span>
             Capabilities
           </Breadcrumb>
-          <Kicker>Manufacturing</Kicker>
-          <IntroTitle>Manufacturing that stays inside your control.</IntroTitle>
-          <IntroLede>
-            Design, corrugating, offset print, die-cutting, gluing and dispatch across three plants — with one
-            quality system and one standard for colour.
-          </IntroLede>
+          <Kicker>{hero.kicker}</Kicker>
+          <IntroTitle>{hero.title}</IntroTitle>
+          <IntroLede>{hero.body}</IntroLede>
           <div style={{ marginTop: 26, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
             <Cta href="/request-a-quote" variant="primary" size="md">
               Discuss a production plan <ArrowRight size={14} />
@@ -278,7 +295,9 @@ export default function CapabilitiesPage() {
           </div>
         </Container>
       </PageIntro>
+      </CmsSection>
 
+      <CmsSection sectionKey="roof">
       <Section>
         <Container>
           <FactorySplit>
@@ -327,13 +346,15 @@ export default function CapabilitiesPage() {
           </FactorySplit>
         </Container>
       </Section>
+      </CmsSection>
 
+      <CmsSection sectionKey="steps">
       <Section $tone="white">
         <Container>
           <SectionHead
-            kicker="Capabilities"
-            title="Every step owned, measured and repeatable."
-            lede="From the first structural concept to the pallet leaving the dock, each capability is staffed, calibrated and documented."
+            kicker={stepsSection.kicker}
+            title={stepsSection.title}
+            lede={stepsSection.body}
             flush
           />
           <div style={{ height: 32 }} />
@@ -350,13 +371,15 @@ export default function CapabilitiesPage() {
           </CapGrid>
         </Container>
       </Section>
+      </CmsSection>
 
+      <CmsSection sectionKey="machinery">
       <Section $tone="paper">
         <Container>
           <SectionHead
-            kicker="Plant floor"
-            title="Machinery selected for tolerance, not brochure appeal."
-            lede="Rated capacities below are production figures, not peak laboratory numbers."
+            kicker={machinerySection.kicker}
+            title={machinerySection.title}
+            lede={machinerySection.body}
             action={
               <Pill>
                 <FactoryIcon size={10} /> 3 facilities · 420 people
@@ -386,7 +409,9 @@ export default function CapabilitiesPage() {
           </MachineryTable>
         </Container>
       </Section>
+      </CmsSection>
 
+      <CmsSection sectionKey="testing">
       <Section>
         <Container>
           <QualityStrip>
@@ -430,7 +455,9 @@ export default function CapabilitiesPage() {
           </QualityStrip>
         </Container>
       </Section>
+      </CmsSection>
 
+      <CmsSection sectionKey="capacity">
       <Section $tone="paper" $tight>
         <Container>
           <CTABand>
@@ -450,6 +477,7 @@ export default function CapabilitiesPage() {
           </CTABand>
         </Container>
       </Section>
-    </>
+      </CmsSection>
+    </CmsPageFlow>
   );
 }

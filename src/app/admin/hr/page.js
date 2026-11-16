@@ -40,6 +40,7 @@ import {
   Divider,
   ProgressTrack,
   ProgressFill,
+  Grid,
 } from '@/components/ui/primitives';
 import { FilterChips, SearchInput, Toolbar } from '@/components/ui/Controls';
 import { DataTable, CellPrimary, CellSecondary, CellStrong } from '@/components/ui/DataTable';
@@ -54,6 +55,16 @@ import {
 } from '@/components/ui/Overlay';
 import { TextField, TextAreaField, SelectField, FormGrid, FormActions } from '@/components/ui/FormFields';
 import MiniStats from '@/components/dashboard/MiniStats';
+
+const Split = styled.div`
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 18px;
+
+  @media (max-width: 1180px) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+`;
 
 const LeaveTop = styled.div`
   display: flex;
@@ -600,7 +611,7 @@ export default function HrPage() {
 
       <div style={{ height: 18 }} />
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 340px', gap: 18 }}>
+      <Grid $cols="minmax(0, 1fr) 340px" $colsMd="minmax(0, 1fr)" $colsSm="minmax(0, 1fr)">
         <Panel>
           <PanelHeader>
             <div>
@@ -722,7 +733,7 @@ export default function HrPage() {
             </PanelBody>
           </Panel>
         </div>
-      </div>
+      </Grid>
 
       <div style={{ height: 18 }} />
 

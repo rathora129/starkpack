@@ -33,8 +33,8 @@ import {
   formatNumber,
   formatDate,
   downloadCSV,
-  timeAgo,
 } from '@/lib/format';
+import { useHydrated } from '@/hooks/useHydrated';
 import { colors, fonts, radii, shadows } from '@/lib/theme';
 import {
   PageHeaderBar,
@@ -413,7 +413,7 @@ const PulseCell = styled(Link)`
   transition: background 140ms ease;
 
   &:hover {
-    background: #FBFAF6;
+    background: #FAFAFD;
   }
 
   span {
@@ -486,6 +486,7 @@ export default function AdminOverviewPage() {
   const [chartView, setChartView] = useState('revenue');
   const [range, setRange] = useState('12');
   const [taskDraft, setTaskDraft] = useState('');
+  const hydrated = useHydrated();
 
   const tasks = useDemoStore((state) => state.tasks);
   const toggleTask = useDemoStore((state) => state.toggleTask);
@@ -546,8 +547,10 @@ export default function AdminOverviewPage() {
   }, [data, range]);
 
   const openTasks = tasks.filter((task) => !task.done).length;
-  const hour = new Date().getHours();
-  const salutation = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  const localNow = hydrated ? new Date() : null;
+  const hour = localNow ? localNow.getHours() : null;
+  const salutation =
+    hour === null ? 'Hello' : hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 
   const openPipeline = revenueSeries
     .filter((quote) => ['Sent', 'Negotiation'].includes(quote.status))
@@ -577,7 +580,7 @@ export default function AdminOverviewPage() {
       <PageHeaderBar>
         <div>
           <Greeting>
-            <span>{formatDate(new Date())} · Mumbai</span>
+            <span>{localNow ? `${formatDate(localNow)} · Mumbai` : 'Mumbai'}</span>
             <StatusChip $tone="success">All plants running</StatusChip>
           </Greeting>
           <PageHeading>{salutation}, Aarav.</PageHeading>

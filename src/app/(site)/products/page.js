@@ -12,9 +12,11 @@ import {
   Clock3,
   Recycle,
 } from 'lucide-react';
-import { products, productCategories } from '@/data/catalog';
+import { products as catalogProducts } from '@/data/catalog';
+import { publishedProducts } from '@/lib/products';
 import { useDemoStore } from '@/store/useDemoStore';
 import { colors, fonts, radii, transitions } from '@/lib/theme';
+import { usePageSections } from '@/hooks/usePageSections';
 import {
   Container,
   Section,
@@ -34,6 +36,7 @@ import {
   ProductMeta,
   Pill,
 } from '@/components/site/ui';
+import { CmsPageFlow, CmsSection } from '@/components/site/CmsPageFlow';
 import Link from 'next/link';
 
 const Tabs = styled.div`
@@ -49,7 +52,7 @@ const Tab = styled.button`
   border-radius: ${radii.pill};
   border: 1px solid ${({ $active }) => ($active ? colors.forest : colors.line)};
   background: ${({ $active }) => ($active ? colors.forest : 'transparent')};
-  color: ${({ $active }) => ($active ? '#F9F6EE' : colors.muted)};
+  color: ${({ $active }) => ($active ? '#F6F6FF' : colors.muted)};
   font-family: ${fonts.sans};
   font-size: 11.5px;
   font-weight: 700;
@@ -57,7 +60,7 @@ const Tab = styled.button`
 
   &:hover {
     border-color: ${colors.forest};
-    color: ${({ $active }) => ($active ? '#F9F6EE' : colors.forest)};
+    color: ${({ $active }) => ($active ? '#F6F6FF' : colors.forest)};
   }
 `;
 
@@ -133,15 +136,21 @@ const assuranceItems = [
 ];
 
 export default function ProductsPage() {
+  const { section } = usePageSections('/products');
+  const hero = section('hero', {
+    kicker: 'Product range',
+    title: 'The right structure for the job.',
+    body: 'Eight core packaging families, each engineered to your dimensions, print and distribution realities. Mix formats across a single programme and keep one quality standard.',
+  });
   const [category, setCategory] = useState('All');
   const cmsProducts = useDemoStore((state) => state.cmsProducts);
-  const publishedSlugs = useMemo(
-    () => new Set(cmsProducts.filter((item) => item.published).map((item) => item.slug)),
+  const visibleProducts = useMemo(
+    () => publishedProducts(cmsProducts, catalogProducts),
     [cmsProducts]
   );
-  const visibleProducts = useMemo(
-    () => products.filter((product) => publishedSlugs.has(product.slug)),
-    [publishedSlugs]
+  const categories = useMemo(
+    () => ['All', ...new Set(visibleProducts.map((product) => product.category))],
+    [visibleProducts]
   );
 
   const filtered = useMemo(
@@ -158,7 +167,8 @@ export default function ProductsPage() {
   }, [visibleProducts]);
 
   return (
-    <>
+    <CmsPageFlow slug="/products" knownKeys={['hero', 'catalogue', 'custom']}>
+      <CmsSection sectionKey="hero">
       <PageIntro>
         <Container>
           <Breadcrumb>
@@ -166,12 +176,9 @@ export default function ProductsPage() {
             <span>/</span>
             Products
           </Breadcrumb>
-          <Kicker>Product range</Kicker>
-          <IntroTitle>The right structure for the job.</IntroTitle>
-          <IntroLede>
-            Eight core packaging families, each engineered to your dimensions, print and distribution
-            realities. Mix formats across a single programme and keep one quality standard.
-          </IntroLede>
+          <Kicker>{hero.kicker}</Kicker>
+          <IntroTitle>{hero.title}</IntroTitle>
+          <IntroLede>{hero.body}</IntroLede>
           <IntroActions>
             <Cta href="/request-a-quote" variant="primary" size="md">
               Request a quote <ArrowRight size={14} />
@@ -193,11 +200,13 @@ export default function ProductsPage() {
           </Assurance>
         </Container>
       </PageIntro>
+      </CmsSection>
 
+      <CmsSection sectionKey="catalogue">
       <Section>
         <Container>
           <Tabs role="group" aria-label="Filter products by category">
-            {productCategories.map((item) => (
+            {categories.map((item) => (
               <Tab
                 key={item}
                 type="button"
@@ -236,7 +245,13 @@ export default function ProductsPage() {
                   <p>{product.tagline}</p>
                   <ProductMeta>
                     <span>
-                      From <strong>₹{product.startingAt}</strong> / {product.unit}
+                      {product.startingAt ? (
+                        <>
+                          From <strong>₹{product.startingAt}</strong> / {product.unit}
+                        </>
+                      ) : (
+                        'Priced per brief'
+                      )}
                     </span>
                     <ArrowUpRight size={15} />
                   </ProductMeta>
@@ -251,7 +266,9 @@ export default function ProductsPage() {
           </div>
         </Container>
       </Section>
+      </CmsSection>
 
+      <CmsSection sectionKey="custom">
       <Section $tone="paper">
         <Container>
           <CTABand>
@@ -271,6 +288,7 @@ export default function ProductsPage() {
           </CTABand>
         </Container>
       </Section>
-    </>
+      </CmsSection>
+    </CmsPageFlow>
   );
 }

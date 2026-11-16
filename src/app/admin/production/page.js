@@ -58,9 +58,37 @@ const Board = styled.div`
   overflow-x: auto;
   padding-bottom: 6px;
   scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
 
   @media (max-width: 1280px) {
     grid-template-columns: repeat(7, 188px);
+  }
+
+  @media (max-width: 640px) {
+    grid-template-columns: repeat(7, 168px);
+  }
+`;
+
+const LowerGrid = styled.div`
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: 18px;
+
+  @media (max-width: 1080px) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+`;
+
+const GaugeRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+
+  > div:last-child {
+    flex: 1 1 150px;
+    min-width: 0;
   }
 `;
 
@@ -460,7 +488,7 @@ export default function ProductionPage() {
 
       <div style={{ height: 18 }} />
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.4fr) minmax(0, 1fr)', gap: 18 }}>
+      <LowerGrid>
         <Panel>
           <PanelHeader>
             <div>
@@ -508,7 +536,7 @@ export default function ProductionPage() {
             </div>
           </PanelHeader>
           <PanelBody>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
+            <GaugeRow>
               <RadialGauge value={96} label="On time" size={118} />
               <div>
                 <p style={{ fontSize: 12, color: colors.inkSoft, lineHeight: 1.6 }}>
@@ -518,7 +546,7 @@ export default function ProductionPage() {
                   Watch the quality holds and labour reallocations flagged on the board.
                 </p>
               </div>
-            </div>
+            </GaugeRow>
             <Divider style={{ margin: '16px 0' }} />
             <BarsChart
               data={[
@@ -536,7 +564,7 @@ export default function ProductionPage() {
             />
           </PanelBody>
         </Panel>
-      </div>
+      </LowerGrid>
 
       <AppModal
         open={formOpen}

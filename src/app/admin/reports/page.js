@@ -123,7 +123,7 @@ const ReportCard = styled.article`
   transition: border-color ${transitions.fast}, box-shadow ${transitions.fast}, transform ${transitions.fast};
 
   &:hover {
-    border-color: ${({ $active }) => ($active ? colors.copper : '#D6CFC0')};
+    border-color: ${({ $active }) => ($active ? colors.copper : '#C9CBE0')};
     box-shadow: ${shadows.card};
     transform: translateY(-1px);
   }
@@ -198,7 +198,7 @@ const CardFooter = styled.div`
   gap: 8px;
   padding: 8px 10px 8px 16px;
   border-top: 1px solid ${colors.lineSoft};
-  background: #FBFAF6;
+  background: #FAFAFD;
 
   > span {
     font-size: 10px;
@@ -1315,6 +1315,7 @@ export default function ReportsPage() {
     asOf,
     dueSoonLimit,
     rangeMeta.value,
+    windowScope,
   ]);
 
   const active = reports.find((report) => report.id === activeId) || reports[0];

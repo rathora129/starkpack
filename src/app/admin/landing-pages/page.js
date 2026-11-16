@@ -80,7 +80,7 @@ const PageCard = styled.article`
   &:hover {
     transform: translateY(-2px);
     box-shadow: ${shadows.card};
-    border-color: #D6CFC0;
+    border-color: #C9CBE0;
   }
 `;
 
@@ -91,8 +91,8 @@ const CardHero = styled.div`
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  background: linear-gradient(145deg, #164236 0%, #0C231C 100%);
-  color: #F9F6EE;
+  background: linear-gradient(145deg, #1B1464 0%, #0D0A33 100%);
+  color: #F6F6FF;
   overflow: hidden;
 
   &::after {
@@ -500,7 +500,7 @@ const AddFieldRow = styled.div`
     font-family: ${fonts.sans};
     font-size: 11.5px;
     color: ${colors.ink};
-    background: #FCFAF5;
+    background: #FAFAFD;
     border: 1px solid ${colors.line};
     border-radius: ${radii.xs};
     padding: 8px 10px;
@@ -525,7 +525,7 @@ const PlainGroup = styled.label`
     font-family: ${fonts.sans};
     font-size: 12px;
     color: ${colors.ink};
-    background: #FCFAF5;
+    background: #FAFAFD;
     border: 1px solid ${colors.line};
     border-radius: ${radii.sm};
     padding: 9px 11px;
@@ -659,7 +659,7 @@ export default function LandingPagesPage() {
       fields: (selected.form?.fields || []).map((field) => ({ ...field })),
     });
     setNewField({ label: '', type: 'text', required: false });
-  }, [selectedId]);
+  }, [selected, selectedId]);
 
   const counts = useMemo(() => {
     const map = { All: landingPages.length, Published: 0, Draft: 0, Paused: 0, Archived: 0 };

@@ -49,6 +49,7 @@ import {
   ProgressFill,
   EmptyState,
 } from '@/components/ui/primitives';
+import { LoadingButton } from '@/components/ui/Feedback';
 import { FilterChips, SearchInput, Toolbar, Segmented } from '@/components/ui/Controls';
 import { DataTable, CellPrimary, CellSecondary, CellStrong } from '@/components/ui/DataTable';
 import {
@@ -108,7 +109,7 @@ const LineHead = styled.div`
   grid-template-columns: 1fr 70px 90px 100px;
   gap: 10px;
   padding: 9px 12px;
-  background: #FBFAF6;
+  background: #FAFAFD;
   font-size: 9.5px;
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -278,7 +279,7 @@ const VersionBadge = styled.span`
   height: 34px;
   border-radius: 9px;
   background: ${({ $current }) => ($current ? colors.forest : colors.mist)};
-  color: ${({ $current }) => ($current ? '#F9F6EE' : colors.muted)};
+  color: ${({ $current }) => ($current ? '#F6F6FF' : colors.muted)};
   font-family: ${fonts.mono};
   font-size: 10px;
   font-weight: 700;
@@ -570,9 +571,9 @@ export default function QuotationsPage() {
       .join('');
     win.document.write(`<!doctype html><html><head><title>${escapeHtml(quote.id)} · Stark Packmate</title>
       <style>
-        body{font-family:Arial,Helvetica,sans-serif;color:#10231D;padding:40px;max-width:820px;margin:0 auto}
+        body{font-family:Arial,Helvetica,sans-serif;color:#121235;padding:40px;max-width:820px;margin:0 auto}
         h1{font-size:22px;margin:0} .muted{color:#6B7A73;font-size:11px;line-height:1.6}
-        .top{display:flex;justify-content:space-between;border-bottom:2px solid #17493B;padding-bottom:16px}
+        .top{display:flex;justify-content:space-between;border-bottom:2px solid #1B1464;padding-bottom:16px}
         table{width:100%;border-collapse:collapse;margin-top:22px;font-size:12px}
         th,td{text-align:left;padding:9px 8px;border-bottom:1px solid #E5E0D5}
         th{background:#F7F5EF;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:#6B7A73}
@@ -584,7 +585,7 @@ export default function QuotationsPage() {
       </style></head><body>
       <div class="top"><div><h1>STARK PACKMATE</h1><div class="muted">Precision packaging · Plot 42, MIDC Industrial Estate, Andheri East, Mumbai 400093<br/>GSTIN 27AABCS4821F1Z5 · hello@starkpackmate.com</div></div>
       <div style="text-align:right"><strong>${escapeHtml(quote.id)}</strong><div class="muted">Revision ${quote.revision || 1}<br/>Date ${escapeHtml(formatDate(quote.date))}<br/>Valid until ${escapeHtml(formatDate(quote.validUntil))}</div></div></div>
-      <p class="muted" style="margin-top:18px"><strong style="color:#10231D;font-size:12px">${escapeHtml(quote.customer)}</strong><br/>${escapeHtml(quote.contact)}</p>
+      <p class="muted" style="margin-top:18px"><strong style="color:#121235;font-size:12px">${escapeHtml(quote.customer)}</strong><br/>${escapeHtml(quote.contact)}</p>
       <table><thead><tr><th>Description</th><th>Qty</th><th>Rate</th><th>Amount</th></tr></thead><tbody>${rows}</tbody></table>
       <div class="totals"><div><span>Subtotal</span><span>₹${totals.subtotal.toLocaleString('en-IN')}</span></div>
       <div><span>Discount (${quote.discountPercent || 0}%)</span><span>- ₹${totals.discount.toLocaleString('en-IN')}</span></div>
@@ -901,9 +902,9 @@ export default function QuotationsPage() {
                   <Button type="button" $variant="secondary" $size="sm" onClick={() => setFormOpen(false)}>
                     Cancel
                   </Button>
-                  <Button type="submit" $variant="primary" $size="sm" disabled={isSubmitting}>
+                  <LoadingButton type="submit" $variant="primary" $size="sm" loading={isSubmitting} loadingLabel="Creating…">
                     Create quotation <ArrowRight size={14} />
-                  </Button>
+                  </LoadingButton>
                 </FormActions>
               </Form>
             );
@@ -1241,9 +1242,9 @@ export default function QuotationsPage() {
                     <Button type="button" $variant="secondary" $size="sm" onClick={() => setEditOpen(false)}>
                       Cancel
                     </Button>
-                    <Button type="submit" $variant="primary" $size="sm" disabled={isSubmitting}>
+                    <LoadingButton type="submit" $variant="primary" $size="sm" loading={isSubmitting} loadingLabel="Saving…">
                       Save quotation
-                    </Button>
+                    </LoadingButton>
                   </FormActions>
                 </Form>
               );

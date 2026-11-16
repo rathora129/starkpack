@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ArrowRight, ArrowUpRight, Clock3 } from 'lucide-react';
 import { useDemoStore } from '@/store/useDemoStore';
 import { colors, fonts, radii, shadows, transitions } from '@/lib/theme';
+import { usePageSections } from '@/hooks/usePageSections';
 import {
   Container,
   Section,
@@ -18,6 +19,7 @@ import {
   BandActions,
   Cta,
 } from '@/components/site/ui';
+import { CmsPageFlow, CmsSection } from '@/components/site/CmsPageFlow';
 import { formatDate } from '@/lib/format';
 
 const ArticleGrid = styled.div`
@@ -95,6 +97,12 @@ const ReadMore = styled.span`
 `;
 
 export default function BlogIndexPage() {
+  const { section } = usePageSections('/blog');
+  const hero = section('hero', {
+    kicker: 'Journal',
+    title: 'Notes from the plant floor.',
+    body: 'Cost engineering, compliance and production thinking from the team that builds the packaging. Practical notes for buyers, founders and supply chain leads.',
+  });
   const blogs = useDemoStore((state) => state.cmsBlogs);
   const published = blogs
     .filter((article) => article.status === 'Published')
@@ -102,7 +110,8 @@ export default function BlogIndexPage() {
     .sort((a, b) => String(b.date).localeCompare(String(a.date)));
 
   return (
-    <>
+    <CmsPageFlow slug="/blog" knownKeys={['hero', 'grid', 'cta']}>
+      <CmsSection sectionKey="hero">
       <PageIntro>
         <Container>
           <Breadcrumb>
@@ -110,15 +119,14 @@ export default function BlogIndexPage() {
             <span>/</span>
             Journal
           </Breadcrumb>
-          <Kicker>Journal</Kicker>
-          <IntroTitle>Notes from the plant floor.</IntroTitle>
-          <IntroLede>
-            Cost engineering, compliance and production thinking from the team that builds the
-            packaging. Practical notes for buyers, founders and supply chain leads.
-          </IntroLede>
+          <Kicker>{hero.kicker}</Kicker>
+          <IntroTitle>{hero.title}</IntroTitle>
+          <IntroLede>{hero.body}</IntroLede>
         </Container>
       </PageIntro>
+      </CmsSection>
 
+      <CmsSection sectionKey="grid">
       <Section $tone="cream" $tight>
         <Container>
           {published.length ? (
@@ -147,7 +155,9 @@ export default function BlogIndexPage() {
           )}
         </Container>
       </Section>
+      </CmsSection>
 
+      <CmsSection sectionKey="cta">
       <Section $tone="paper" $tight>
         <Container>
           <CTABand>
@@ -164,6 +174,7 @@ export default function BlogIndexPage() {
           </CTABand>
         </Container>
       </Section>
-    </>
+      </CmsSection>
+    </CmsPageFlow>
   );
 }

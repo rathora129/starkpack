@@ -96,8 +96,8 @@ const CompanyMark = styled.div`
   gap: 14px;
   padding: 16px;
   border-radius: ${radii.md};
-  background: linear-gradient(140deg, #164236 0%, #0C231C 100%);
-  color: #F9F6EE;
+  background: linear-gradient(140deg, #1B1464 0%, #0D0A33 100%);
+  color: #F6F6FF;
   margin-bottom: 20px;
 
   strong {
@@ -195,7 +195,7 @@ const ChatHeader = styled.div`
   gap: 10px;
   padding: 12px 14px;
   background: #0F3B2E;
-  color: #F9F6EE;
+  color: #F6F6FF;
 
   strong {
     display: block;

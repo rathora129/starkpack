@@ -74,7 +74,7 @@ const toneStyles = {
   `,
   forest: css`
     background: ${colors.sidebar};
-    color: #F3EFE4;
+    color: #EDEDF6;
   `,
   copper: css`
     background: ${colors.copperWash};
@@ -116,7 +116,7 @@ export const SectionTitle = styled.h2`
   font-weight: 500;
   line-height: 1.08;
   letter-spacing: -0.028em;
-  color: ${({ $light }) => ($light ? '#F9F6EE' : colors.ink)};
+  color: ${({ $light }) => ($light ? '#F6F6FF' : colors.ink)};
   max-width: 780px;
 `;
 
@@ -164,7 +164,7 @@ export function SectionHead({ kicker, title, lede, action, light = false, center
 const ctaVariants = {
   primary: css`
     background: ${colors.forest};
-    color: #F9F6EE;
+    color: #F6F6FF;
     border: 1px solid ${colors.forest};
 
     &:hover {
@@ -196,9 +196,9 @@ const ctaVariants = {
     }
   `,
   light: css`
-    background: #F9F6EE;
+    background: #F6F6FF;
     color: ${colors.ink};
-    border: 1px solid #F9F6EE;
+    border: 1px solid #F6F6FF;
 
     &:hover {
       background: #fff;
@@ -207,7 +207,7 @@ const ctaVariants = {
   `,
   ghostLight: css`
     background: transparent;
-    color: #F9F6EE;
+    color: #F6F6FF;
     border: 1px solid rgba(249, 246, 238, 0.28);
 
     &:hover {
@@ -259,7 +259,7 @@ export const ArrowLink = styled(Link)`
 
   &:hover {
     gap: 11px;
-    color: ${({ $light }) => ($light ? '#F1C9A0' : colors.copperDeep)};
+    color: ${({ $light }) => ($light ? '#F3B4B9' : colors.copperDeep)};
   }
 `;
 
@@ -373,7 +373,7 @@ export const Stat = styled.div`
     font-size: clamp(28px, 3vw, 40px);
     font-weight: 500;
     letter-spacing: -0.03em;
-    color: ${({ $light }) => ($light ? '#F9F6EE' : colors.ink)};
+    color: ${({ $light }) => ($light ? '#F6F6FF' : colors.ink)};
     line-height: 1;
   }
 
@@ -407,8 +407,8 @@ export const CTABand = styled.div`
   overflow: hidden;
   border-radius: ${radii.xl};
   padding: 46px 44px;
-  background: linear-gradient(135deg, #164236 0%, #0C231C 70%);
-  color: #F9F6EE;
+  background: linear-gradient(135deg, #1B1464 0%, #0D0A33 70%);
+  color: #F6F6FF;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -428,7 +428,7 @@ export const CTABand = styled.div`
 
   h2 {
     font-size: clamp(26px, 3vw, 38px);
-    color: #F9F6EE;
+    color: #F6F6FF;
     max-width: 620px;
   }
 
@@ -465,7 +465,7 @@ export const ProductCard = styled(Link)`
   &:hover {
     transform: translateY(-3px);
     box-shadow: ${shadows.lift};
-    border-color: #D6CFC0;
+    border-color: #C9CBE0;
   }
 `;
 
@@ -578,7 +578,7 @@ export const FeatureCard = styled.div`
   transition: border-color ${transitions.fast}, transform ${transitions.fast};
 
   &:hover {
-    border-color: ${({ $light }) => ($light ? 'rgba(217,160,106,0.4)' : '#D6CFC0')};
+    border-color: ${({ $light }) => ($light ? 'rgba(217,160,106,0.4)' : '#C9CBE0')};
     transform: translateY(-2px);
   }
 
@@ -588,7 +588,7 @@ export const FeatureCard = styled.div`
     font-size: 13.5px;
     font-weight: 800;
     letter-spacing: -0.005em;
-    color: ${({ $light }) => ($light ? '#F9F6EE' : colors.ink)};
+    color: ${({ $light }) => ($light ? '#F6F6FF' : colors.ink)};
   }
 
   p {

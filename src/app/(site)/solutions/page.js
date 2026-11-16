@@ -7,6 +7,7 @@ import { ArrowRight, ArrowUpRight, Check, Sparkles } from 'lucide-react';
 import { solutions } from '@/data/catalog';
 import { useDemoStore } from '@/store/useDemoStore';
 import { colors, fonts, radii, transitions } from '@/lib/theme';
+import { usePageSections } from '@/hooks/usePageSections';
 import {
   Container,
   Section,
@@ -23,6 +24,7 @@ import {
   BandActions,
   SiteIcon,
 } from '@/components/site/ui';
+import { CmsPageFlow, CmsSection } from '@/components/site/CmsPageFlow';
 
 const AnchorRow = styled.div`
   display: flex;
@@ -226,7 +228,7 @@ const ServiceCard = styled.div`
     height: 36px;
     border-radius: 9px;
     background: ${colors.forest};
-    color: #F9F6EE;
+    color: #F6F6FF;
     margin-bottom: 14px;
   }
 
@@ -247,6 +249,17 @@ const ServiceCard = styled.div`
 `;
 
 export default function SolutionsPage() {
+  const { section } = usePageSections('/solutions');
+  const hero = section('hero', {
+    kicker: 'Solutions',
+    title: 'Packaging systems, not just boxes.',
+    body: 'A packaging programme connects structure, print, packing line, courier network and returns. We engineer the whole system — so one decision does not create a problem somewhere else.',
+  });
+  const servicesSection = section('services', {
+    kicker: 'Managed services',
+    title: 'The work that sits around the box.',
+    body: 'Structural design, prototyping, print production and managed replenishment.',
+  });
   const cmsServices = useDemoStore((state) => state.cmsServices);
   const publishedServices = cmsServices
     .filter((service) => service.published)
@@ -254,7 +267,8 @@ export default function SolutionsPage() {
     .sort((a, b) => Number(a.order) - Number(b.order));
 
   return (
-    <>
+    <CmsPageFlow slug="/solutions" knownKeys={['hero', 'outcomes', 'services', 'cta']}>
+      <CmsSection sectionKey="hero">
       <PageIntro>
         <Container>
           <Breadcrumb>
@@ -262,12 +276,9 @@ export default function SolutionsPage() {
             <span>/</span>
             Solutions
           </Breadcrumb>
-          <Kicker>Solutions</Kicker>
-          <IntroTitle>Packaging systems, not just boxes.</IntroTitle>
-          <IntroLede>
-            A packaging programme connects structure, print, packing line, courier network and returns. We
-            engineer the whole system — so one decision does not create a problem somewhere else.
-          </IntroLede>
+          <Kicker>{hero.kicker}</Kicker>
+          <IntroTitle>{hero.title}</IntroTitle>
+          <IntroLede>{hero.body}</IntroLede>
           <div style={{ marginTop: 26 }}>
             <Cta href="/request-a-quote" variant="primary" size="md">
               Design your programme <ArrowRight size={14} />
@@ -282,7 +293,9 @@ export default function SolutionsPage() {
           </AnchorRow>
         </Container>
       </PageIntro>
+      </CmsSection>
 
+      <CmsSection sectionKey="outcomes">
       <Section>
         <Container>
           <SolutionList>
@@ -337,14 +350,16 @@ export default function SolutionsPage() {
           </SolutionList>
         </Container>
       </Section>
+      </CmsSection>
 
+      <CmsSection sectionKey="services">
       {publishedServices.length ? (
         <Section $tone="cream" $tight>
           <Container>
             <SectionHead
-              kicker="Managed services"
-              title="The work that sits around the box."
-              lede="Structural engineering, print production, compliance and replenishment — delivered by one team with one quality standard."
+              kicker={servicesSection.kicker}
+              title={servicesSection.title}
+              lede={servicesSection.body}
               flush
             />
             <ServiceGrid style={{ marginTop: 28 }}>
@@ -361,7 +376,9 @@ export default function SolutionsPage() {
           </Container>
         </Section>
       ) : null}
+      </CmsSection>
 
+      <CmsSection sectionKey="cta">
       <Section $tone="paper">
         <Container>
           <CTABand>
@@ -386,6 +403,7 @@ export default function SolutionsPage() {
           </CTABand>
         </Container>
       </Section>
-    </>
+      </CmsSection>
+    </CmsPageFlow>
   );
 }

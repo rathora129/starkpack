@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { HeroUIProvider } from '@heroui/react';
 import { GlobalStyle } from '@/styles/GlobalStyle';
 import { ToastViewport } from '@/components/ui/Toast';
+import { NavProgress } from '@/components/ui/NavProgress';
 import StyledComponentsRegistry from './StyledComponentsRegistry';
 
 export default function Providers({ children }) {
@@ -28,6 +29,7 @@ export default function Providers({ children }) {
       <GlobalStyle />
       <HeroUIProvider navigate={(href) => router.push(href)}>
         <QueryClientProvider client={queryClient}>
+          <NavProgress />
           {children}
           <ToastViewport />
         </QueryClientProvider>

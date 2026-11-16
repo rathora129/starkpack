@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ArrowRight, ArrowUpRight, Check } from 'lucide-react';
 import { industries, products, clientLogos } from '@/data/catalog';
 import { colors, fonts, radii, shadows, transitions } from '@/lib/theme';
+import { usePageSections } from '@/hooks/usePageSections';
 import {
   Container,
   Section,
@@ -20,6 +21,7 @@ import {
   Pill,
   SiteIcon,
 } from '@/components/site/ui';
+import { CmsPageFlow, CmsSection } from '@/components/site/CmsPageFlow';
 
 const IndustryGrid = styled.div`
   display: grid;
@@ -46,7 +48,7 @@ const Card = styled.article`
   transition: border-color ${transitions.base}, transform ${transitions.base}, box-shadow ${transitions.base};
 
   &:hover {
-    border-color: #D6CFC0;
+    border-color: #C9CBE0;
     transform: translateY(-2px);
     box-shadow: ${shadows.card};
   }
@@ -239,8 +241,16 @@ const services = [
 ];
 
 export default function IndustriesPage() {
+  const { section } = usePageSections('/industries');
+  const hero = section('hero', {
+    kicker: 'Industries',
+    title: 'Different products. The same obsession with arrival.',
+    body: 'A serum bottle, a coffee pouch and a 1,200 kg machine part fail differently in transit. We bring category-specific structures, print and compliance to each.',
+  });
+
   return (
-    <>
+    <CmsPageFlow slug="/industries" knownKeys={['hero', 'grid', 'approach', 'cta']}>
+      <CmsSection sectionKey="hero">
       <PageIntro>
         <Container>
           <Breadcrumb>
@@ -248,12 +258,9 @@ export default function IndustriesPage() {
             <span>/</span>
             Industries
           </Breadcrumb>
-          <Kicker>Industries</Kicker>
-          <IntroTitle>Different products. The same obsession with arrival.</IntroTitle>
-          <IntroLede>
-            A serum bottle, a coffee pouch and a 1,200 kg machine part fail differently in transit. We bring
-            category-specific structures, print and compliance to each.
-          </IntroLede>
+          <Kicker>{hero.kicker}</Kicker>
+          <IntroTitle>{hero.title}</IntroTitle>
+          <IntroLede>{hero.body}</IntroLede>
           <div style={{ marginTop: 26, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
             <Cta href="/request-a-quote" variant="primary" size="md">
               Request a quote <ArrowRight size={14} />
@@ -264,7 +271,9 @@ export default function IndustriesPage() {
           </div>
         </Container>
       </PageIntro>
+      </CmsSection>
 
+      <CmsSection sectionKey="grid">
       <Section>
         <Container>
           <IndustryGrid>
@@ -303,7 +312,9 @@ export default function IndustriesPage() {
           </IndustryGrid>
         </Container>
       </Section>
+      </CmsSection>
 
+      <CmsSection sectionKey="approach">
       <Section $tone="white" $tight>
         <Container>
           <div style={{ marginBottom: 24 }}>
@@ -335,7 +346,9 @@ export default function IndustriesPage() {
           </LogoRow>
         </Container>
       </Section>
+      </CmsSection>
 
+      <CmsSection sectionKey="cta">
       <Section $tone="paper" $tight>
         <Container>
           <CTABand>
@@ -356,6 +369,7 @@ export default function IndustriesPage() {
           </CTABand>
         </Container>
       </Section>
-    </>
+      </CmsSection>
+    </CmsPageFlow>
   );
 }

@@ -22,7 +22,9 @@ import { products } from '@/data/catalog';
 import { useDemoStore } from '@/store/useDemoStore';
 import { notify } from '@/store/useUiStore';
 import { todayISO, plusDaysISO } from '@/lib/format';
+import { captureAttribution } from '@/lib/attribution';
 import { colors, fonts, radii, shadows, transitions } from '@/lib/theme';
+import { usePageSections } from '@/hooks/usePageSections';
 import {
   Container,
   Section,
@@ -33,6 +35,7 @@ import {
   Pill,
   ImageFrame,
 } from '@/components/site/ui';
+import { CmsPageFlow, CmsSection } from '@/components/site/CmsPageFlow';
 import {
   TextField,
   TextAreaField,
@@ -105,7 +108,7 @@ const Submit = styled.button`
   border-radius: ${radii.sm};
   border: 1px solid ${colors.forest};
   background: ${colors.forest};
-  color: #F9F6EE;
+  color: #F6F6FF;
   font-family: ${fonts.sans};
   font-size: 12.5px;
   font-weight: 700;
@@ -194,7 +197,7 @@ const ContactMini = styled.div`
     font-family: ${fonts.display};
     font-size: 20px;
     font-weight: 500;
-    color: #F9F6EE;
+    color: #F6F6FF;
     letter-spacing: -0.02em;
   }
 
@@ -387,6 +390,12 @@ const productOptions = [
 ];
 
 export default function RequestQuotePage() {
+  const { section } = usePageSections('/request-a-quote');
+  const hero = section('hero', {
+    kicker: 'Request a quote',
+    title: "Tell us what you need. We'll engineer the rest.",
+    body: 'Share your product, volume and date. A packaging consultant will respond within one business day with a structure recommendation and indicative pricing.',
+  });
   const contact = useDemoStore((state) => state.cms.contact);
   const addLead = useDemoStore((state) => state.addLead);
   const [productPrefill, setProductPrefill] = useState('');
@@ -420,7 +429,8 @@ export default function RequestQuotePage() {
   };
 
   return (
-    <>
+    <CmsPageFlow slug="/request-a-quote" knownKeys={['hero', 'form']}>
+      <CmsSection sectionKey="hero">
       <PageIntro>
         <Container>
           <Breadcrumb>
@@ -428,7 +438,7 @@ export default function RequestQuotePage() {
             <span>/</span>
             Request a quote
           </Breadcrumb>
-          <Kicker>Request a quote</Kicker>
+          <Kicker>{hero.kicker}</Kicker>
           <h1
             style={{
               marginTop: 16,
@@ -441,11 +451,10 @@ export default function RequestQuotePage() {
               maxWidth: 820,
             }}
           >
-            Tell us what you need. We&apos;ll engineer the rest.
+            {hero.title}
           </h1>
           <p style={{ marginTop: 18, fontSize: 14.5, lineHeight: 1.72, color: colors.muted, maxWidth: 600 }}>
-            Share your product, volume and date. A packaging consultant will respond within one business day
-            with a structure recommendation and indicative pricing.
+            {hero.body}
           </p>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 22 }}>
             <Pill>
@@ -460,7 +469,9 @@ export default function RequestQuotePage() {
           </div>
         </Container>
       </PageIntro>
+      </CmsSection>
 
+      <CmsSection sectionKey="form">
       <PageWrap>
         <Container>
           <Layout>
@@ -538,6 +549,7 @@ export default function RequestQuotePage() {
                       .join('\n');
 
                     const lead = addLead({
+                      ...captureAttribution(),
                       company: values.company,
                       contact: values.name,
                       title: 'Procurement lead',
@@ -734,8 +746,9 @@ export default function RequestQuotePage() {
           </Layout>
         </Container>
       </PageWrap>
+      </CmsSection>
 
       <div style={{ height: 64 }} />
-    </>
+    </CmsPageFlow>
   );
 }

@@ -10,8 +10,8 @@ import { Container, Section, Kicker, Cta } from './ui';
 const Hero = styled.section`
   position: relative;
   overflow: hidden;
-  background: radial-gradient(120% 140% at 85% 0%, #1E5A48 0%, #123A2F 42%, #0A1E18 100%);
-  color: #F9F6EE;
+  background: radial-gradient(120% 140% at 85% 0%, #1B1464 0%, #120D45 42%, #0D0A33 100%);
+  color: #F6F6FF;
   padding: 96px 0 88px;
 
   &::after {
@@ -52,7 +52,7 @@ const HeroTitle = styled.h1`
   line-height: 1.05;
   letter-spacing: -0.03em;
   margin: 18px 0 20px;
-  color: #F9F6EE;
+  color: #F6F6FF;
 `;
 
 const HeroBody = styled.p`
@@ -185,7 +185,7 @@ const StepCard = styled.div`
     height: 26px;
     border-radius: 50%;
     background: ${colors.forest};
-    color: #F9F6EE;
+    color: #F6F6FF;
     font-family: ${fonts.mono};
     font-size: 10px;
     font-weight: 700;
@@ -259,7 +259,7 @@ const Field = styled.label`
     font-family: ${fonts.sans};
     font-size: 12.5px;
     color: ${colors.ink};
-    background: #FCFAF5;
+    background: #FAFAFD;
     border: 1px solid ${colors.line};
     border-radius: ${radii.sm};
     padding: 10px 12px;
@@ -293,8 +293,8 @@ const FormError = styled.span`
 const SuccessCard = styled.div`
   padding: 30px 26px;
   border-radius: ${radii.lg};
-  border: 1px solid #CBE3D6;
-  background: #F2F8F4;
+  border: 1px solid #D9D6F4;
+  background: #F3F3FB;
   box-shadow: ${shadows.card};
 
   span {
@@ -304,7 +304,7 @@ const SuccessCard = styled.div`
     height: 34px;
     border-radius: 50%;
     background: ${colors.forest};
-    color: #F9F6EE;
+    color: #F6F6FF;
     margin-bottom: 14px;
   }
 

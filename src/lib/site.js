@@ -25,48 +25,5 @@ export const site = {
   },
 };
 
-export const primaryNav = [
-  { label: 'Home', href: '/' },
-  { label: 'About', href: '/about' },
-  { label: 'Products', href: '/products' },
-  { label: 'Solutions', href: '/solutions' },
-  { label: 'Industries', href: '/industries' },
-  { label: 'Capabilities', href: '/capabilities' },
-  { label: 'Quality', href: '/quality' },
-  { label: 'Portfolio', href: '/portfolio' },
-  { label: 'Contact', href: '/contact' },
-];
-
-export const footerLinks = {
-  company: [
-    { label: 'About us', href: '/about' },
-    { label: 'Manufacturing', href: '/capabilities' },
-    { label: 'Quality & compliance', href: '/quality' },
-    { label: 'Portfolio', href: '/portfolio' },
-    { label: 'Contact', href: '/contact' },
-  ],
-  products: [
-    { label: 'Corrugated boxes', href: '/products/corrugated-shipping-boxes' },
-    { label: 'Premium mailers', href: '/products/premium-mailer-boxes' },
-    { label: 'Folding cartons', href: '/products/printed-folding-cartons' },
-    { label: 'Rigid gift boxes', href: '/products/rigid-gift-boxes' },
-    { label: 'Kraft retail bags', href: '/products/kraft-retail-bags' },
-  ],
-  solutions: [
-    { label: 'E-commerce fulfilment', href: '/solutions#ecommerce' },
-    { label: 'Retail & brand', href: '/solutions#retail' },
-    { label: 'Industrial & logistics', href: '/solutions#industrial' },
-    { label: 'Food & beverage', href: '/solutions#food' },
-    { label: 'Subscription & gifting', href: '/solutions#gifting' },
-  ],
-  resources: [
-    { label: 'Request a quote', href: '/quote' },
-    { label: 'Industries served', href: '/industries' },
-    { label: 'Client portal', href: '/portal' },
-    { label: 'Admin dashboard', href: '/admin' },
-    { label: 'Careers', href: '/about#careers' },
-  ],
-};
-
 export const whatsappLink = (number, message = site.whatsappMessage) =>
   `https://wa.me/${String(number || site.whatsapp).replace(/[^0-9]/g, '')}?text=${encodeURIComponent(message)}`;

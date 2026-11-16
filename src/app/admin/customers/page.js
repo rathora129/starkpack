@@ -72,7 +72,7 @@ const Tile = styled.span`
   height: 46px;
   border-radius: 12px;
   background: ${colors.forest};
-  color: #F9F6EE;
+  color: #F6F6FF;
   font-family: ${fonts.display};
   font-size: 18px;
   flex: 0 0 auto;

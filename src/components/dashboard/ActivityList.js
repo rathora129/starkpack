@@ -33,7 +33,7 @@ const Initials = styled.span`
   height: 28px;
   border-radius: 50%;
   background: ${({ $tone }) => $tone || colors.forest};
-  color: #F9F6EE;
+  color: #F6F6FF;
   font-size: 9.5px;
   font-weight: 700;
   flex: 0 0 auto;
@@ -65,13 +65,13 @@ const Body = styled.div`
 `;
 
 const tones = {
-  lead: '#B87333',
-  production: '#17493B',
+  lead: '#D81E2C',
+  production: '#1B1464',
   inventory: '#376C8A',
   finance: '#2E7D5B',
   artwork: '#7C491F',
   logistics: '#5C655F',
-  commercial: '#9C5E27',
+  commercial: '#B31420',
 };
 
 export default function ActivityList({ items, compact = false }) {

@@ -32,8 +32,8 @@ import {
   formatNumber,
   statusTone,
   downloadCSV,
-  timeAgo,
 } from '@/lib/format';
+import RelativeTime from '@/components/ui/RelativeTime';
 import { colors, fonts, radii } from '@/lib/theme';
 import {
   PageHeaderBar,
@@ -50,6 +50,7 @@ import {
   EmptyState,
 } from '@/components/ui/primitives';
 import { FilterChips, SearchInput, QuickSelect, Toolbar, Segmented } from '@/components/ui/Controls';
+import { LoadingButton } from '@/components/ui/Feedback';
 import { DataTable, CellPrimary, CellSecondary, CellStrong } from '@/components/ui/DataTable';
 import {
   AppModal,
@@ -66,10 +67,11 @@ import {
 } from '@/components/ui/Overlay';
 import { TextField, TextAreaField, SelectField, FormGrid, FormActions } from '@/components/ui/FormFields';
 import MiniStats from '@/components/dashboard/MiniStats';
+import { LEAD_SOURCES, sourceSummary } from '@/lib/attribution';
 
 const STAGES = ['New', 'Contacted', 'Qualified', 'Proposal', 'Won', 'Lost'];
 const OWNERS = ['Neha Joshi', 'Rahul Menon', 'Sana Kulkarni', 'Priya Nair'];
-const SOURCES = ['Website', 'Referral', 'Trade show', 'LinkedIn', 'Agency', 'Outbound', 'Instagram', 'Landing page'];
+const SOURCES = LEAD_SOURCES;
 
 const LeadHead = styled.div`
   display: flex;
@@ -85,7 +87,7 @@ const Monogram = styled.span`
   height: 46px;
   border-radius: 12px;
   background: ${colors.forest};
-  color: #F9F6EE;
+  color: #F6F6FF;
   font-family: ${fonts.display};
   font-size: 19px;
   font-weight: 500;
@@ -184,6 +186,33 @@ const ScoreBadge = styled.span`
   color: ${({ $hot }) => ($hot ? colors.copperDeep : colors.muted)};
 `;
 
+const ViewRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+
+  p {
+    font-size: 10.5px;
+    color: ${colors.muted};
+    max-width: 560px;
+    line-height: 1.5;
+  }
+`;
+
+const AttributionNote = styled.p`
+  padding: 9px 11px;
+  border-radius: ${radii.sm};
+  border: 1px dashed ${colors.line};
+  background: ${colors.cream};
+  font-size: 10px;
+  line-height: 1.55;
+  color: ${colors.muted};
+  margin-bottom: 14px;
+`;
+
 const OwnerRow = styled.div`
   display: flex;
   align-items: center;
@@ -268,7 +297,7 @@ const NoteComposer = styled.div`
     font-size: 12px;
     line-height: 1.55;
     color: ${colors.ink};
-    background: #FCFAF5;
+    background: #FAFAFD;
     border: 1px solid ${colors.line};
     border-radius: ${radii.sm};
     padding: 10px 12px;
@@ -325,7 +354,15 @@ const initialValues = {
   email: '',
   phone: '',
   city: '',
-  source: 'Website',
+  sourceChannel: 'Website',
+  sourceDetail: '',
+  campaignName: '',
+  landingPage: '',
+  utmSource: '',
+  utmMedium: '',
+  utmCampaign: '',
+  utmContent: '',
+  referrer: '',
   product: products[0].name,
   quantity: '',
   value: '',
@@ -342,7 +379,6 @@ function editValues(lead) {
     email: lead.email,
     phone: lead.phone,
     city: lead.city,
-    source: lead.source,
     product: lead.product,
     quantity: lead.quantity,
     value: lead.value || '',
@@ -370,6 +406,8 @@ export default function LeadsPage() {
   const [stage, setStage] = useState('All');
   const [query, setQuery] = useState('');
   const [owner, setOwner] = useState('All');
+  const [sourceFilter, setSourceFilter] = useState('All');
+  const [view, setView] = useState('pipeline');
   const [formOpen, setFormOpen] = useState(false);
   const [selectedId, setSelectedId] = useState(null);
   const [tab, setTab] = useState('overview');
@@ -412,16 +450,54 @@ export default function LeadsPage() {
     return leads.filter((lead) => {
       if (stage !== 'All' && lead.stage !== stage) return false;
       if (owner !== 'All' && lead.owner !== owner) return false;
+      if (sourceFilter !== 'All' && lead.sourceChannel !== sourceFilter) return false;
       if (!q) return true;
       return (
         lead.company.toLowerCase().includes(q) ||
         lead.contact.toLowerCase().includes(q) ||
         lead.product.toLowerCase().includes(q) ||
         lead.city.toLowerCase().includes(q) ||
-        lead.source.toLowerCase().includes(q)
+        lead.source.toLowerCase().includes(q) ||
+        String(lead.sourceDetail || '').toLowerCase().includes(q) ||
+        String(lead.campaignName || '').toLowerCase().includes(q)
       );
     });
-  }, [leads, stage, owner, query]);
+  }, [leads, stage, owner, sourceFilter, query]);
+
+  const sourceRows = useMemo(() => sourceSummary(leads), [leads]);
+
+  const sourceColumns = [
+    {
+      key: 'source',
+      label: 'Source',
+      render: (row) => (
+        <>
+          <CellPrimary>{row.source}</CellPrimary>
+          <CellSecondary>{Math.round((row.leads / Math.max(leads.length, 1)) * 100)}% of all leads</CellSecondary>
+        </>
+      ),
+    },
+    { key: 'leads', label: 'Leads', align: 'right', render: (row) => <CellStrong>{formatNumber(row.leads)}</CellStrong> },
+    { key: 'qualified', label: 'Qualified', align: 'right', render: (row) => formatNumber(row.qualified) },
+    { key: 'quotations', label: 'Quotations', align: 'right', render: (row) => formatNumber(row.quotations) },
+    { key: 'wonOrders', label: 'Won orders', align: 'right', render: (row) => formatNumber(row.wonOrders) },
+    {
+      key: 'revenue',
+      label: 'Confirmed revenue',
+      align: 'right',
+      render: (row) => <CellStrong>{formatCompactINR(row.revenue)}</CellStrong>,
+    },
+  ];
+  const sourceTotals = sourceRows.reduce(
+    (total, row) => ({
+      leads: total.leads + row.leads,
+      qualified: total.qualified + row.qualified,
+      quotations: total.quotations + row.quotations,
+      wonOrders: total.wonOrders + row.wonOrders,
+      revenue: total.revenue + row.revenue,
+    }),
+    { leads: 0, qualified: 0, quotations: 0, wonOrders: 0, revenue: 0 }
+  );
 
   const openValue = leads
     .filter((lead) => !['Won', 'Lost'].includes(lead.stage))
@@ -436,7 +512,30 @@ export default function LeadsPage() {
   const exportLeads = () => {
     downloadCSV(
       'stark-packmate-leads.csv',
-      ['Reference', 'Company', 'Contact', 'Email', 'Phone', 'City', 'Source', 'Product', 'Quantity', 'Value', 'Stage', 'Owner'],
+      [
+        'Reference',
+        'Company',
+        'Contact',
+        'Email',
+        'Phone',
+        'City',
+        'Source channel',
+        'Source detail',
+        'Campaign',
+        'Landing page',
+        'UTM source',
+        'UTM medium',
+        'UTM campaign',
+        'UTM content',
+        'Referrer',
+        'Product',
+        'Quantity',
+        'Estimated value',
+        'Quotation value',
+        'Confirmed order value',
+        'Stage',
+        'Owner',
+      ],
       filtered.map((lead) => [
         lead.id,
         lead.company,
@@ -444,15 +543,34 @@ export default function LeadsPage() {
         lead.email,
         lead.phone,
         lead.city,
-        lead.source,
+        lead.sourceChannel,
+        lead.sourceDetail,
+        lead.campaignName,
+        lead.landingPage,
+        lead.utmSource,
+        lead.utmMedium,
+        lead.utmCampaign,
+        lead.utmContent,
+        lead.referrer,
         lead.product,
         lead.quantity,
         lead.value,
+        lead.quoteValue,
+        lead.confirmedOrderValue,
         lead.stage,
         lead.owner,
       ])
     );
-    notify('Leads exported', `${filtered.length} leads downloaded as CSV.`, 'success');
+    notify('Leads exported', `${filtered.length} leads with attribution downloaded as CSV.`, 'success');
+  };
+
+  const exportSources = () => {
+    downloadCSV(
+      'stark-packmate-lead-sources.csv',
+      ['Source', 'Leads', 'Qualified leads', 'Quotations', 'Won orders', 'Confirmed revenue'],
+      sourceRows.map((row) => [row.source, row.leads, row.qualified, row.quotations, row.wonOrders, row.revenue])
+    );
+    notify('Source report exported', 'Lead-source performance downloaded as CSV.', 'success');
   };
 
   const convert = (lead) => {
@@ -501,6 +619,18 @@ export default function LeadsPage() {
       ),
     },
     {
+      key: 'source',
+      label: 'Source',
+      render: (lead) => (
+        <>
+          <StatusChip $tone={lead.sourceChannel === 'Google Ads' ? 'warning' : lead.sourceChannel === 'Meta Ads' ? 'danger' : lead.sourceChannel === 'Referral' ? 'success' : 'info'}>
+            {lead.sourceChannel || 'Other'}
+          </StatusChip>
+          <CellSecondary>{lead.campaignName && lead.campaignName !== '—' ? lead.campaignName : lead.sourceDetail}</CellSecondary>
+        </>
+      ),
+    },
+    {
       key: 'product',
       label: 'Requirement',
       render: (lead) => (
@@ -537,7 +667,7 @@ export default function LeadsPage() {
       render: (lead) => (
         <>
           <CellPrimary style={{ fontWeight: 600 }}>{lead.owner}</CellPrimary>
-          <CellSecondary>{lead.source}</CellSecondary>
+          <CellSecondary>{lead.email}</CellSecondary>
         </>
       ),
     },
@@ -547,7 +677,9 @@ export default function LeadsPage() {
       render: (lead) => (
         <>
           <CellPrimary style={{ fontWeight: 600 }}>{lead.nextAction}</CellPrimary>
-          <CellSecondary>{timeAgo(lead.createdAt)}</CellSecondary>
+          <CellSecondary>
+            <RelativeTime value={lead.createdAt} />
+          </CellSecondary>
         </>
       ),
     },
@@ -589,41 +721,102 @@ export default function LeadsPage() {
 
       <div style={{ height: 18 }} />
 
-      <Panel>
-        <PanelHeader>
-          <div>
-            <PanelTitle>Lead register</PanelTitle>
-            <div style={{ marginTop: 4, fontSize: 12, color: colors.muted }}>
-              {filtered.length} of {leads.length} leads
+      <ViewRow>
+        <Segmented
+          value={view}
+          onChange={setView}
+          options={[
+            { value: 'pipeline', label: 'Pipeline' },
+            { value: 'sources', label: 'Source performance' },
+          ]}
+        />
+        <p>
+          Attribution is captured once and frozen — editing a lead never rewrites its original source,
+          campaign or UTM values.
+        </p>
+      </ViewRow>
+
+      {view === 'pipeline' ? (
+        <Panel>
+          <PanelHeader>
+            <div>
+              <PanelTitle>Lead register</PanelTitle>
+              <div style={{ marginTop: 4, fontSize: 12, color: colors.muted }}>
+                {filtered.length} of {leads.length} leads
+              </div>
             </div>
+            <Toolbar style={{ padding: 0, border: 0, background: 'transparent' }}>
+              <SearchInput value={query} onChange={setQuery} placeholder="Search company, contact, source…" />
+              <QuickSelect
+                label="Filter source"
+                value={sourceFilter}
+                onChange={setSourceFilter}
+                options={[
+                  { value: 'All', label: 'All sources' },
+                  ...LEAD_SOURCES.map((source) => ({
+                    value: source,
+                    label: `${source} (${leads.filter((lead) => lead.sourceChannel === source).length})`,
+                  })),
+                ]}
+              />
+              <QuickSelect
+                label="Filter owner"
+                value={owner}
+                onChange={setOwner}
+                options={owners.map((name) => ({ value: name, label: name === 'All' ? 'All owners' : name }))}
+              />
+            </Toolbar>
+          </PanelHeader>
+          <div style={{ padding: '12px 16px 0' }}>
+            <FilterChips options={stageOptions} value={stage} onChange={setStage} />
           </div>
-          <Toolbar style={{ padding: 0, border: 0, background: 'transparent' }}>
-            <SearchInput value={query} onChange={setQuery} placeholder="Search company, contact, source…" />
-            <QuickSelect
-              label="Filter owner"
-              value={owner}
-              onChange={setOwner}
-              options={owners.map((name) => ({ value: name, label: name === 'All' ? 'All owners' : name }))}
+          <PanelBody $flush>
+            <DataTable
+              columns={columns}
+              rows={filtered}
+              onRowClick={(row) => setSelectedId(row.id)}
+              minWidth="960px"
+              footer={
+                <span>
+                  Showing <strong>{filtered.length}</strong> records · click any row to open the lead
+                </span>
+              }
             />
-          </Toolbar>
-        </PanelHeader>
-        <div style={{ padding: '12px 16px 0' }}>
-          <FilterChips options={stageOptions} value={stage} onChange={setStage} />
-        </div>
-        <PanelBody $flush>
-          <DataTable
-            columns={columns}
-            rows={filtered}
-            onRowClick={(row) => setSelectedId(row.id)}
-            minWidth="960px"
-            footer={
-              <span>
-                Showing <strong>{filtered.length}</strong> records · click any row to open the lead
-              </span>
-            }
-          />
-        </PanelBody>
-      </Panel>
+          </PanelBody>
+        </Panel>
+      ) : (
+        <Panel>
+          <PanelHeader>
+            <div>
+              <PanelTitle>Source performance</PanelTitle>
+              <div style={{ marginTop: 4, fontSize: 12, color: colors.muted }}>
+                Leads, qualified leads, quotations, won orders and confirmed revenue by source channel
+              </div>
+            </div>
+            <Button $variant="light" $size="sm" onClick={exportSources}>
+              <Download size={14} /> Export source report
+            </Button>
+          </PanelHeader>
+          <PanelBody $flush>
+            <DataTable
+              columns={sourceColumns}
+              rows={sourceRows}
+              minWidth="760px"
+              emptyTitle="No source activity yet"
+              emptyHint="Captured campaigns and organic enquiries will be summarised here."
+              footer={
+                <span>
+                  <strong>{formatNumber(sourceTotals.leads)}</strong> leads ·{' '}
+                  <strong>{formatNumber(sourceTotals.qualified)}</strong> qualified ·{' '}
+                  <strong>{formatNumber(sourceTotals.quotations)}</strong> quotations ·{' '}
+                  <strong>{formatNumber(sourceTotals.wonOrders)}</strong> won ·{' '}
+                  <strong>{formatCompactINR(sourceTotals.revenue)}</strong> confirmed revenue
+                </span>
+              }
+            />
+          </PanelBody>
+        </Panel>
+      )}
 
       <AppModal
         open={formOpen}
@@ -651,7 +844,7 @@ export default function LeadsPage() {
                 <TextField name="email" label="Email" type="email" placeholder="name@company.in" required />
                 <TextField name="phone" label="Phone" placeholder="+91 98…" required />
                 <TextField name="city" label="City" placeholder="Mumbai" required />
-                <SelectField name="source" label="Lead source" options={SOURCES} />
+                <SelectField name="sourceChannel" label="Lead source" options={SOURCES} />
                 <SelectField
                   name="product"
                   label="Product family"
@@ -661,6 +854,22 @@ export default function LeadsPage() {
                 <TextField name="quantity" label="Approximate quantity" placeholder="e.g. 10,000 units" required />
                 <TextField name="value" label="Estimated value" type="number" prefix="₹" placeholder="500000" />
                 <SelectField name="owner" label="Salesperson" options={OWNERS} />
+              </FormGrid>
+              <div style={{ height: 14 }} />
+              <AttributionNote>
+                <strong>Attribution</strong> — captured once from the enquiry and locked for reporting.
+                Website and landing-page forms fill this automatically from the URL; use the fields below
+                only for calls, exhibitions or manual entries.
+              </AttributionNote>
+              <FormGrid $cols={2}>
+                <TextField name="sourceDetail" label="Source detail" placeholder="e.g. Google Ads — brand search" />
+                <TextField name="campaignName" label="Campaign name" placeholder="e.g. Google Search — Q4" />
+                <TextField name="landingPage" label="Landing page URL" placeholder="/request-a-quote?utm_source=…" />
+                <TextField name="referrer" label="Referrer" placeholder="e.g. packexpo.com" />
+                <TextField name="utmSource" label="UTM source" placeholder="google" />
+                <TextField name="utmMedium" label="UTM medium" placeholder="cpc" />
+                <TextField name="utmCampaign" label="UTM campaign" placeholder="brand-search" />
+                <TextField name="utmContent" label="UTM content" placeholder="ad-variant-a" />
               </FormGrid>
               <div style={{ height: 14 }} />
               <TextAreaField
@@ -673,9 +882,9 @@ export default function LeadsPage() {
                 <Button type="button" $variant="secondary" $size="sm" onClick={() => setFormOpen(false)}>
                   Cancel
                 </Button>
-                <Button type="submit" $variant="primary" $size="sm" disabled={isSubmitting}>
+                <LoadingButton type="submit" $variant="primary" $size="sm" loading={isSubmitting} loadingLabel="Creating lead…">
                   Create lead <ArrowRight size={14} />
-                </Button>
+                </LoadingButton>
               </FormActions>
             </Form>
           )}
@@ -769,11 +978,60 @@ export default function LeadsPage() {
                   </DetailItem>
                   <DetailItem>
                     <DetailLabel>Campaign</DetailLabel>
-                    <DetailValue>{selected.campaignId || 'Organic / direct'}</DetailValue>
+                    <DetailValue>
+                      {selected.campaignName && selected.campaignName !== '—'
+                        ? selected.campaignName
+                        : 'Organic / direct'}
+                    </DetailValue>
                   </DetailItem>
                   <DetailItem>
                     <DetailLabel>Created</DetailLabel>
                     <DetailValue>{formatDate(selected.createdAt)}</DetailValue>
+                  </DetailItem>
+                </DetailGrid>
+
+                <AttributionNote>
+                  <strong>Original attribution</strong> —{' '}
+                  {selected.originalSource || selected.sourceChannel || selected.source}, captured{' '}
+                  {formatDate(selected.createdAt)} and locked for reporting. Editing this lead cannot
+                  rewrite its source, campaign or UTM values.
+                </AttributionNote>
+                <DetailGrid>
+                  <DetailItem>
+                    <DetailLabel>Source channel</DetailLabel>
+                    <DetailValue>{selected.sourceChannel || selected.source}</DetailValue>
+                  </DetailItem>
+                  <DetailItem>
+                    <DetailLabel>Source detail</DetailLabel>
+                    <DetailValue>{selected.sourceDetail || '—'}</DetailValue>
+                  </DetailItem>
+                  <DetailItem>
+                    <DetailLabel>UTM source / medium</DetailLabel>
+                    <DetailValue>
+                      {selected.utmSource || '—'} / {selected.utmMedium || '—'}
+                    </DetailValue>
+                  </DetailItem>
+                  <DetailItem>
+                    <DetailLabel>UTM campaign / content</DetailLabel>
+                    <DetailValue>
+                      {selected.utmCampaign || '—'} / {selected.utmContent || '—'}
+                    </DetailValue>
+                  </DetailItem>
+                  <DetailItem>
+                    <DetailLabel>Landing page</DetailLabel>
+                    <DetailValue>{selected.landingPage || '—'}</DetailValue>
+                  </DetailItem>
+                  <DetailItem>
+                    <DetailLabel>Referrer</DetailLabel>
+                    <DetailValue>{selected.referrer || 'Direct'}</DetailValue>
+                  </DetailItem>
+                  <DetailItem>
+                    <DetailLabel>Quotation value</DetailLabel>
+                    <DetailValue>{formatCompactINR(selected.quoteValue || 0)}</DetailValue>
+                  </DetailItem>
+                  <DetailItem>
+                    <DetailLabel>Confirmed order value</DetailLabel>
+                    <DetailValue>{formatCompactINR(selected.confirmedOrderValue || 0)}</DetailValue>
                   </DetailItem>
                 </DetailGrid>
 
@@ -965,6 +1223,15 @@ export default function LeadsPage() {
             }}
           >
             <Form>
+              <AttributionNote>
+                <strong>Original attribution (locked)</strong> — {selected.sourceChannel || selected.source}
+                {selected.originalSource && selected.originalSource !== selected.sourceChannel
+                  ? ` · original: ${selected.originalSource}`
+                  : ''}
+                {selected.campaignName && selected.campaignName !== '—' ? ` · ${selected.campaignName}` : ''}
+                {' · '}captured {formatDate(selected.createdAt)}. Source, campaign and UTM data never
+                change when you edit a lead.
+              </AttributionNote>
               <FormGrid $cols={2}>
                 <TextField name="company" label="Company" required />
                 <TextField name="contact" label="Contact person" required />
@@ -972,7 +1239,6 @@ export default function LeadsPage() {
                 <TextField name="email" label="Email" type="email" required />
                 <TextField name="phone" label="Phone" required />
                 <TextField name="city" label="City" required />
-                <SelectField name="source" label="Lead source" options={SOURCES} />
                 <SelectField name="owner" label="Salesperson" options={OWNERS} />
                 <SelectField name="product" label="Product family" options={products.map((product) => product.name)} required />
                 <TextField name="quantity" label="Quantity" required />

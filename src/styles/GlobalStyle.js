@@ -81,13 +81,13 @@ export const GlobalStyle = createGlobalStyle`
   }
 
   ::-webkit-scrollbar-thumb {
-    background: #D7D2C6;
+    background: #C9CBDD;
     border-radius: 99px;
     border: 2px solid ${colors.cream};
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: #BFB8A9;
+    background: #A9ACC4;
   }
 
   .no-scrollbar {

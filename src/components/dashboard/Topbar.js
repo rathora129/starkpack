@@ -24,19 +24,20 @@ import {
   Truck,
   Wallet,
   ExternalLink,
-  LogOut,
   Settings2,
   UserRound,
   Menu,
   Search,
   LayoutGrid,
+  LogOut,
 } from 'lucide-react';
-import { adminNav, findAdminPage } from '@/lib/nav';
+import { adminNav, findAdminPage, demoRoleById, canAccess } from '@/lib/nav';
 import { colors, fonts, radii, shadows, transitions } from '@/lib/theme';
 import { useDemoStore } from '@/store/useDemoStore';
 import { useUiStore, notify } from '@/store/useUiStore';
+import { useAuthStore } from '@/store/useAuthStore';
 import { currentUser } from '@/data/admin';
-import { timeAgo } from '@/lib/format';
+import { initialsOf, timeAgo } from '@/lib/format';
 import { Kbd } from '@/components/ui/primitives';
 
 const Header = styled.header`
@@ -446,6 +447,10 @@ export default function Topbar() {
   const router = useRouter();
   const setMobileNavOpen = useUiStore((state) => state.setMobileNavOpen);
   const setCommandOpen = useUiStore((state) => state.setCommandOpen);
+  const session = useAuthStore((state) => state.session);
+  const signOut = useAuthStore((state) => state.signOut);
+  const roleConfig = demoRoleById(session?.role);
+  const person = session?.person || currentUser.name;
   const notifications = useDemoStore((state) => state.notifications);
   const markNotificationRead = useDemoStore((state) => state.markNotificationRead);
   const markAllNotificationsRead = useDemoStore((state) => state.markAllNotificationsRead);
@@ -567,26 +572,28 @@ export default function Topbar() {
         <Dropdown placement="bottom-end">
           <DropdownTrigger>
             <ProfileTrigger aria-label="Open profile menu">
-              <Avatar name={currentUser.initials} size="sm" className="h-8 w-8 shrink-0 bg-[#17493B] text-[10px] font-bold text-white" />
+              <Avatar name={initialsOf(person)} size="sm" className="h-8 w-8 shrink-0 bg-[#1B1464] text-[10px] font-bold text-white" />
               <ProfileText className="profile-text">
-                <strong>{currentUser.name}</strong>
-                <span>{currentUser.role}</span>
+                <strong>{person}</strong>
+                <span>{roleConfig.label} demo</span>
               </ProfileText>
               <ChevronDown size={13} className="profile-chevron" style={{ color: colors.faint }} />
             </ProfileTrigger>
           </DropdownTrigger>
           <DropdownMenu
             aria-label="Profile menu"
-            className="min-w-[220px] border border-[#E5E0D5] bg-white p-1"
-            itemClasses={{ base: 'rounded-md data-[hover=true]:bg-[#F6F4EE] py-2', title: 'text-[12px]' }}
+            className="min-w-[220px] border border-[#E3E4EE] bg-white p-1"
+            itemClasses={{ base: 'rounded-md data-[hover=true]:bg-[#F3F3FA] py-2', title: 'text-[12px]' }}
           >
-            <DropdownItem
-              key="profile"
-              startContent={<UserRound size={14} />}
-              onPress={() => router.push('/admin/settings')}
-            >
-              Profile & settings
-            </DropdownItem>
+            {canAccess(session?.role, '/admin/settings') ? (
+              <DropdownItem
+                key="profile"
+                startContent={<UserRound size={14} />}
+                onPress={() => router.push('/admin/settings')}
+              >
+                Profile & settings
+              </DropdownItem>
+            ) : null}
             <DropdownItem
               key="preferences"
               startContent={<Settings2 size={14} />}
@@ -594,21 +601,31 @@ export default function Topbar() {
             >
               Notification preferences
             </DropdownItem>
+            {canAccess(session?.role, '/admin/portal') ? (
+              <DropdownItem
+                key="portal"
+                startContent={<ExternalLink size={14} />}
+                onPress={() => router.push('/admin/portal')}
+              >
+                Preview customer portal
+              </DropdownItem>
+            ) : null}
             <DropdownItem
-              key="portal"
+              key="exit"
               startContent={<ExternalLink size={14} />}
-              onPress={() => router.push('/admin/portal')}
+              onPress={() => router.push('/')}
             >
-              Preview customer portal
+              Exit to public website
             </DropdownItem>
             <DropdownItem
               key="signout"
               startContent={<LogOut size={14} />}
-              className="text-[#B0472F]"
-              color="danger"
-              onPress={() =>
-                notify('Demo session', 'Sign-out is disabled in this presentation demo.', 'info')
-              }
+              className="text-[#C31525]"
+              onPress={() => {
+                signOut();
+                notify('Signed out', 'The demo workspace session was cleared.', 'info');
+                router.replace('/workspace-access');
+              }}
             >
               Sign out
             </DropdownItem>

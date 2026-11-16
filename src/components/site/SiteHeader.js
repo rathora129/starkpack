@@ -13,7 +13,6 @@ import {
   MessageCircle,
   MapPin,
   Mail,
-  ChevronRight,
 } from 'lucide-react';
 import Logo from '@/components/brand/Logo';
 import { useDemoStore } from '@/store/useDemoStore';
@@ -35,8 +34,22 @@ const DemoRibbon = styled.div`
   background: ${colors.sidebar};
   color: rgba(249, 246, 238, 0.82);
 
-  @media (max-width: 700px) {
+  .compact {
     display: none;
+  }
+
+  @media (max-width: 700px) {
+    .full {
+      display: none;
+    }
+
+    .compact {
+      display: inline-flex;
+    }
+
+    a {
+      display: none;
+    }
   }
 `;
 
@@ -73,7 +86,7 @@ const RibbonInner = styled.div`
     transition: color ${transitions.fast};
 
     &:hover {
-      color: #F1C9A0;
+      color: #F3B4B9;
     }
   }
 `;
@@ -106,7 +119,7 @@ const AnnounceInner = styled.div`
     font-weight: 700;
 
     &:hover {
-      color: #F1C9A0;
+      color: #F3B4B9;
     }
   }
 `;
@@ -363,11 +376,10 @@ export default function SiteHeader() {
         <Container>
           <RibbonInner>
             <span>
-              <i /> Interactive presentation · sample data, live demo actions
+              <i />
+              <span className="full">Interactive presentation · sample data, live demo actions</span>
+              <span className="compact">Demo presentation · sample data</span>
             </span>
-            <Link href="/admin">
-              Explore the admin workspace <ArrowUpRight size={11} />
-            </Link>
           </RibbonInner>
         </Container>
       </DemoRibbon>
@@ -413,8 +425,8 @@ export default function SiteHeader() {
         </Container>
       </Bar>
 
-      <MobilePanel $open={open} onClick={() => setOpen(false)} aria-hidden={!open}>
-        <MobileSheet $open={open} onClick={(event) => event.stopPropagation()} role="dialog" aria-label="Site navigation">
+      <MobilePanel $open={open} onClick={() => setOpen(false)} aria-hidden={!open} inert={!open}>
+        <MobileSheet $open={open} onClick={(event) => event.stopPropagation()} role="dialog" aria-label="Site navigation" aria-modal={open || undefined}>
           <SheetHead>
             <Logo size="sm" />
             <MenuButton type="button" aria-label="Close navigation menu" onClick={() => setOpen(false)}>
@@ -424,7 +436,7 @@ export default function SiteHeader() {
           <SheetNav>
             {navItems.map((item) => (
               <Link key={item.href} href={item.href} onClick={() => setOpen(false)}>
-                {item.label} <ChevronRight size={15} />
+                {item.label} <ArrowUpRight size={14} />
               </Link>
             ))}
           </SheetNav>

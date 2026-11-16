@@ -4,6 +4,7 @@ import styled from 'styled-components';
 import { Inbox } from 'lucide-react';
 import { colors, fonts } from '@/lib/theme';
 import { EmptyState } from './primitives';
+import { SkeletonBar } from './Feedback';
 
 const Wrap = styled.div`
   width: 100%;
@@ -19,7 +20,7 @@ const Table = styled.table`
 `;
 
 const Thead = styled.thead`
-  background: #FBFAF6;
+  background: #FAFAFD;
 `;
 
 const Th = styled.th`
@@ -39,7 +40,7 @@ const Tr = styled.tr`
     $clickable
       ? `
         cursor: pointer;
-        &:hover { background: #FBFAF6; }
+        &:hover { background: #FAFAFD; }
         &:focus-visible { outline: 2px solid ${colors.copper}; outline-offset: -2px; }
       `
       : ''}
@@ -79,24 +80,35 @@ export function DataTable({
   minWidth = '760px',
   dense = false,
   footer,
+  loading = false,
   emptyTitle = 'Nothing here yet',
   emptyHint = 'New records will appear here as your team works.',
 }) {
   return (
-    <div>
+    <div aria-busy={loading || undefined}>
       <Wrap>
         <Table $minWidth={minWidth}>
           <Thead>
             <tr>
               {columns.map((column) => (
-                <Th key={column.key} $align={column.align} style={{ width: column.width }}>
+                <Th key={column.key} $align={column.align} style={{ width: column.width }} scope="col">
                   {column.label}
                 </Th>
               ))}
             </tr>
           </Thead>
           <Tbody>
-            {rows.map((row, rowIndex) => (
+            {loading
+              ? Array.from({ length: 5 }).map((_, rowIndex) => (
+                  <Tr key={`skeleton-${rowIndex}`}>
+                    {columns.map((column, columnIndex) => (
+                      <Td key={column.key} $align={column.align} $dense={dense}>
+                        <SkeletonBar $w={columnIndex === 0 ? '72%' : columnIndex % 2 ? '48%' : '62%'} />
+                      </Td>
+                    ))}
+                  </Tr>
+                ))
+              : rows.map((row, rowIndex) => (
               <Tr
                 key={row.id || row.key || rowIndex}
                 $clickable={Boolean(onRowClick)}
@@ -123,7 +135,7 @@ export function DataTable({
           </Tbody>
         </Table>
       </Wrap>
-      {rows.length === 0 ? (
+      {!loading && rows.length === 0 ? (
         <EmptyState>
           <Inbox size={28} />
           <strong>{emptyTitle}</strong>

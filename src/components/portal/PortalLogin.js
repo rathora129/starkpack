@@ -19,7 +19,9 @@ import {
 import { PORTAL_SESSION_KEY, portalDemoAccess } from '@/data/portal';
 import { notify } from '@/store/useUiStore';
 import { colors, fonts, radii, shadows } from '@/lib/theme';
+import Logo from '@/components/brand/Logo';
 import { Button, StatusChip } from '@/components/ui/primitives';
+import { LoadingButton } from '@/components/ui/Feedback';
 import { TextField, FormActions } from '@/components/ui/FormFields';
 
 const loginValidation = Yup.object({
@@ -55,9 +57,10 @@ const Aside = styled.section`
   padding: 44px clamp(28px, 5vw, 64px);
   overflow: hidden;
   background:
-    radial-gradient(760px 420px at 88% -12%, rgba(184, 115, 51, 0.34) 0%, rgba(184, 115, 51, 0) 62%),
-    linear-gradient(150deg, #0B2A22 0%, #17493B 58%, #1E5A49 100%);
-  color: #F6F2E8;
+    radial-gradient(760px 420px at 88% -12%, rgba(237, 28, 36, 0.3) 0%, rgba(237, 28, 36, 0) 62%),
+    radial-gradient(560px 380px at 0% 108%, rgba(0, 167, 233, 0.22) 0%, rgba(0, 167, 233, 0) 64%),
+    linear-gradient(150deg, #0D0A33 0%, #1B1464 58%, #251C78 100%);
+  color: #F6F6FF;
 
   @media (max-width: 940px) {
     padding: 30px 24px 34px;
@@ -72,37 +75,17 @@ const BrandRow = styled.div`
 `;
 
 const BrandMark = styled.span`
-  display: grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 11px;
-  background: linear-gradient(150deg, #D9A06A 0%, ${colors.copper} 100%);
-  color: #23150A;
-  font-family: ${fonts.display};
-  font-size: 17px;
-  font-weight: 600;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
-`;
-
-const BrandName = styled.div`
-  small {
-    display: block;
-    font-size: 9px;
-    font-weight: 800;
-    letter-spacing: 0.24em;
-    text-transform: uppercase;
-    color: rgba(246, 242, 232, 0.6);
-  }
-
-  strong {
-    display: block;
-    font-family: ${fonts.display};
-    font-size: 17px;
-    font-weight: 500;
-    letter-spacing: 0.01em;
-    color: #FBF8F2;
-  }
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: ${radii.xs};
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(246, 246, 255, 0.74);
+  font-size: 8.5px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
 `;
 
 const AsideBody = styled.div`
@@ -115,8 +98,8 @@ const Kicker = styled.p`
   gap: 7px;
   padding: 5px 11px;
   border-radius: 999px;
-  border: 1px solid rgba(217, 160, 106, 0.35);
-  background: rgba(217, 160, 106, 0.12);
+  border: 1px solid rgba(240, 109, 119, 0.35);
+  background: rgba(240, 109, 119, 0.12);
   color: ${colors.copperSoft};
   font-size: 10px;
   font-weight: 800;
@@ -131,7 +114,7 @@ const Headline = styled.h1`
   font-weight: 500;
   line-height: 1.08;
   letter-spacing: -0.015em;
-  color: #FBF8F2;
+  color: #FBFBFE;
 
   em {
     font-style: italic;
@@ -164,7 +147,7 @@ const Benefit = styled.li`
     display: block;
     font-size: 12.5px;
     font-weight: 700;
-    color: #FBF8F2;
+    color: #FBFBFE;
   }
 
   p {
@@ -307,7 +290,7 @@ const CredentialRow = styled.div`
     font-weight: 700;
     color: ${colors.ink};
     background: rgba(255, 255, 255, 0.72);
-    border: 1px solid rgba(184, 115, 51, 0.22);
+    border: 1px solid rgba(237, 28, 36, 0.22);
     border-radius: 5px;
     padding: 2px 7px;
     word-break: break-all;
@@ -404,11 +387,8 @@ export default function PortalLogin({ onSignedIn }) {
     <Page>
       <Aside>
         <BrandRow>
-          <BrandMark>S</BrandMark>
-          <BrandName>
-            <small>Stark Packmate</small>
-            <strong>Customer Portal</strong>
-          </BrandName>
+          <Logo inverse size="sm" />
+          <BrandMark>Customer portal</BrandMark>
         </BrandRow>
 
         <AsideBody>
@@ -508,9 +488,9 @@ export default function PortalLogin({ onSignedIn }) {
                   >
                     Reset demo login
                   </Button>
-                  <Button type="submit" $variant="primary" $size="md" disabled={isSubmitting}>
+                  <LoadingButton type="submit" $variant="primary" $size="md" loading={isSubmitting} loadingLabel="Opening portal…">
                     <LockKeyhole size={14} /> Open portal <ArrowRight size={14} />
-                  </Button>
+                  </LoadingButton>
                 </FormActions>
               </Form>
             )}
@@ -523,7 +503,7 @@ export default function PortalLogin({ onSignedIn }) {
 
           <FootLinks>
             <Link href="/">← Back to website</Link>
-            <Link href="/admin">Admin workspace</Link>
+            <Link href="/workspace-access">Switch workspace role</Link>
           </FootLinks>
         </Card>
       </Panel>

@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { ArrowRight, ArrowUpRight, Check, MapPin } from 'lucide-react';
 import { timeline, leadership, values, facilityStats, brandStats } from '@/data/catalog';
 import { colors, fonts, radii, transitions } from '@/lib/theme';
+import { usePageSections } from '@/hooks/usePageSections';
 import {
   Container,
   Section,
@@ -27,6 +28,7 @@ import {
   SiteIcon,
   TwoCol,
 } from '@/components/site/ui';
+import { CmsPageFlow, CmsSection } from '@/components/site/CmsPageFlow';
 
 const LeadImage = styled(ImageFrame)`
   aspect-ratio: 21 / 8;
@@ -125,7 +127,7 @@ const Leader = styled.article`
   transition: border-color ${transitions.fast}, transform ${transitions.fast};
 
   &:hover {
-    border-color: #D6CFC0;
+    border-color: #C9CBE0;
     transform: translateY(-2px);
   }
 
@@ -163,7 +165,7 @@ const LeaderAvatar = styled.span`
   display: grid;
   place-items: center;
   background: ${({ $tone }) => ($tone ? colors.copperWash : colors.forest)};
-  color: ${({ $tone }) => ($tone ? colors.copperDeep : '#F9F6EE')};
+  color: ${({ $tone }) => ($tone ? colors.copperDeep : '#F6F6FF')};
   font-size: 14px;
   font-weight: 800;
   letter-spacing: 0.02em;
@@ -195,8 +197,31 @@ const PlantRow = styled.div`
 `;
 
 export default function AboutPage() {
+  const { section } = usePageSections('/about');
+  const hero = section('hero', {
+    kicker: 'About Stark Packmate',
+    title: "A workshop's eye. A factory's discipline.",
+    body: 'We began in 2009 with one flexo press in Mumbai and a belief that packaging was being treated as an afterthought. Sixteen years later, three plants and 420 people later, the belief has not changed.',
+  });
+  const milestones = section('milestones', {
+    kicker: 'Milestones',
+    title: 'Sixteen years, one direction.',
+    body: 'Each expansion was driven by a client problem we could no longer solve well through a supplier.',
+  });
+  const valuesSection = section('values', {
+    kicker: 'What we believe',
+    title: 'Four rules that show up in every decision.',
+    body: 'Not values on a wall — operating rules that determine how we quote, build and dispatch.',
+  });
+  const leadershipSection = section('leadership', {
+    kicker: 'Leadership',
+    title: 'The people accountable for your programme.',
+    body: 'Commercial, engineering and plant leadership working as one team.',
+  });
+
   return (
-    <>
+    <CmsPageFlow slug="/about" knownKeys={['hero', 'story', 'milestones', 'values', 'leadership', 'footprint', 'cta']}>
+      <CmsSection sectionKey="hero">
       <PageIntro>
         <Container>
           <Breadcrumb>
@@ -204,12 +229,9 @@ export default function AboutPage() {
             <span>/</span>
             About
           </Breadcrumb>
-          <Kicker>About Stark Packmate</Kicker>
-          <IntroTitle>A workshop&apos;s eye. A factory&apos;s discipline.</IntroTitle>
-          <IntroLede>
-            We began in 2009 with one flexo press in Mumbai and a belief that packaging was being treated as an
-            afterthought. Sixteen years later, three plants and 420 people later, the belief has not changed.
-          </IntroLede>
+          <Kicker>{hero.kicker}</Kicker>
+          <IntroTitle>{hero.title}</IntroTitle>
+          <IntroLede>{hero.body}</IntroLede>
           <PlantRow>
             <span>
               <MapPin size={11} /> Mumbai · Andheri East
@@ -231,7 +253,9 @@ export default function AboutPage() {
           </div>
         </Container>
       </PageIntro>
+      </CmsSection>
 
+      <CmsSection sectionKey="story">
       <Section $tight>
         <Container>
           <LeadImage>
@@ -304,13 +328,15 @@ export default function AboutPage() {
           </TwoCol>
         </Container>
       </Section>
+      </CmsSection>
 
+      <CmsSection sectionKey="milestones">
       <Section $tone="paper">
         <Container>
           <SectionHead
-            kicker="Milestones"
-            title="Sixteen years, one direction."
-            lede="Each expansion was driven by a client problem we could no longer solve well through a supplier."
+            kicker={milestones.kicker}
+            title={milestones.title}
+            lede={milestones.body}
             flush
           />
           <div style={{ height: 30 }} />
@@ -325,13 +351,15 @@ export default function AboutPage() {
           </TimelineWrap>
         </Container>
       </Section>
+      </CmsSection>
 
+      <CmsSection sectionKey="values">
       <Section>
         <Container>
           <SectionHead
-            kicker="What we believe"
-            title="Four rules that show up in every decision."
-            lede="Not values on a wall — operating rules that determine how we quote, build and dispatch."
+            kicker={valuesSection.kicker}
+            title={valuesSection.title}
+            lede={valuesSection.body}
             flush
           />
           <div style={{ height: 30 }} />
@@ -348,13 +376,15 @@ export default function AboutPage() {
           </ValuesGrid>
         </Container>
       </Section>
+      </CmsSection>
 
+      <CmsSection sectionKey="leadership">
       <Section $tone="white" $tight>
         <Container>
           <SectionHead
-            kicker="Leadership"
-            title="The people accountable for your programme."
-            lede="A small, senior team — close to the floor, present in reviews and reachable when something matters."
+            kicker={leadershipSection.kicker}
+            title={leadershipSection.title}
+            lede={leadershipSection.body}
           />
           <TeamGrid>
             {leadership.map((person, index) => (
@@ -368,13 +398,15 @@ export default function AboutPage() {
           </TeamGrid>
         </Container>
       </Section>
+      </CmsSection>
 
+      <CmsSection sectionKey="footprint">
       <Section $tone="forest" $tight>
         <Container>
           <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 24, flexWrap: 'wrap', marginBottom: 8 }}>
             <div>
               <Kicker $light>Our footprint</Kicker>
-              <h2 style={{ marginTop: 12, fontFamily: fonts.display, fontSize: 'clamp(26px, 3vw, 38px)', fontWeight: 500, letterSpacing: '-0.028em', color: '#F9F6EE', maxWidth: 620 }}>
+              <h2 style={{ marginTop: 12, fontFamily: fonts.display, fontSize: 'clamp(26px, 3vw, 38px)', fontWeight: 500, letterSpacing: '-0.028em', color: '#F6F6FF', maxWidth: 620 }}>
                 Three plants. One production standard.
               </h2>
             </div>
@@ -392,7 +424,9 @@ export default function AboutPage() {
           </StatGrid>
         </Container>
       </Section>
+      </CmsSection>
 
+      <CmsSection sectionKey="cta">
       <Section $tone="paper" $tight>
         <Container>
           <CTABand>
@@ -415,6 +449,7 @@ export default function AboutPage() {
           </CTABand>
         </Container>
       </Section>
-    </>
+      </CmsSection>
+    </CmsPageFlow>
   );
 }

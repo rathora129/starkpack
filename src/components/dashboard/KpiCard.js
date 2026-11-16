@@ -20,7 +20,7 @@ const Card = styled.article`
 
   ${({ $accent }) =>
     $accent
-      ? `background: linear-gradient(160deg, #143D31 0%, #0C231C 100%); border-color: #0C231C;`
+      ? `background: linear-gradient(160deg, #0D0A3B 0%, #121235 100%); border-color: #0D0A3B;`
       : ''}
 `;
 
@@ -64,7 +64,7 @@ const Value = styled.p`
   font-weight: 500;
   letter-spacing: -0.03em;
   line-height: 1;
-  color: ${({ $accent }) => ($accent ? '#FBF8F2' : colors.ink)};
+  color: ${({ $accent }) => ($accent ? '#FBFBFE' : colors.ink)};
   font-variant-numeric: tabular-nums;
 `;
 

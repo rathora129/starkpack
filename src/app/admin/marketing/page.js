@@ -17,6 +17,8 @@ import {
   Wallet,
   Sparkles,
   TrendingUp,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { useDemoStore } from '@/store/useDemoStore';
 import { notify } from '@/store/useUiStore';
@@ -52,7 +54,6 @@ import { DataTable, CellPrimary, CellSecondary, CellStrong } from '@/components/
 import { AppModal, Drawer, ConfirmDialog, DetailGrid, DetailItem, DetailLabel, DetailValue } from '@/components/ui/Overlay';
 import { TextField, TextAreaField, SelectField, FormGrid, FormActions } from '@/components/ui/FormFields';
 import { DonutChart } from '@/components/ui/charts';
-import MiniStats from '@/components/dashboard/MiniStats';
 
 const QUALIFIED_STAGES = ['Qualified', 'Proposal', 'Won'];
 const CHANNELS = ['Google Ads', 'Meta Ads', 'Other'];
@@ -275,6 +276,48 @@ const Note = styled.div`
   }
 `;
 
+const OwnerGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(152px, 1fr));
+  gap: 10px;
+`;
+
+const OwnerCard = styled.div`
+  padding: 14px 16px;
+  border: 1px solid ${({ $highlight }) => ($highlight ? colors.forest : colors.lineSoft)};
+  border-radius: ${radii.md};
+  background: ${({ $highlight }) => ($highlight ? colors.forest : colors.surface)};
+
+  span {
+    display: block;
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: ${({ $highlight }) => ($highlight ? 'rgba(255, 255, 255, 0.72)' : colors.faint)};
+  }
+
+  strong {
+    display: block;
+    margin-top: 5px;
+    font-family: ${fonts.display};
+    font-size: 21px;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    color: ${({ $highlight }) => ($highlight ? '#fff' : colors.ink)};
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+  }
+
+  em {
+    display: block;
+    margin-top: 3px;
+    font-style: normal;
+    font-size: 10px;
+    color: ${({ $highlight }) => ($highlight ? 'rgba(255, 255, 255, 0.72)' : colors.faint)};
+  }
+`;
+
 const campaignValidation = Yup.object({
   name: Yup.string().trim().required('Campaign name is required'),
   channel: Yup.string().required(),
@@ -351,6 +394,7 @@ export default function MarketingPage() {
   const [feeOpen, setFeeOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [briefOpen, setBriefOpen] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
 
   const selected = campaigns.find((campaign) => campaign.id === selectedId) || null;
   const editing = campaigns.find((campaign) => campaign.id === editId) || null;
@@ -412,7 +456,52 @@ export default function MarketingPage() {
   const attributedOrders = rows.reduce((sum, campaign) => sum + campaign.orderCount, 0);
   const confirmedRevenue = rows.reduce((sum, campaign) => sum + campaign.revenue, 0);
   const blendedRoi = totalSpend ? confirmedRevenue / totalSpend : 0;
-  const active = rows.filter((campaign) => campaign.status === 'Active').length;
+
+  const agencyFeeTotal = agencyFees.reduce((sum, fee) => sum + fee.fee, 0);
+  const totalMarketingSpend = totalSpend + agencyFeeTotal;
+  const ownerRoi = totalMarketingSpend
+    ? ((confirmedRevenue - totalMarketingSpend) / totalMarketingSpend) * 100
+    : 0;
+
+  const monthlyRows = useMemo(() => {
+    const months = Array.from(
+      new Set([
+        ...campaignExpenses.map((expense) => expense.month),
+        ...agencyFees.map((fee) => fee.month),
+        ...leads.map((lead) => String(lead.createdAt || '').slice(0, 7)),
+        ...orders.map((order) => String(order.createdAt || order.date || '').slice(0, 7)),
+      ].filter((month) => /^\d{4}-\d{2}$/.test(month)))
+    ).sort((a, b) => b.localeCompare(a));
+
+    return months.map((month) => {
+      const agencyFee = agencyFees
+        .filter((fee) => fee.month === month)
+        .reduce((sum, fee) => sum + fee.fee, 0);
+      const adSpend = campaignExpenses
+        .filter((expense) => expense.month === month)
+        .reduce((sum, expense) => sum + expense.amount, 0);
+      const monthLeads = leads.filter(
+        (lead) => lead.campaignId && String(lead.createdAt || '').slice(0, 7) === month
+      ).length;
+      const monthOrders = orders.filter(
+        (order) =>
+          order.campaignId && String(order.createdAt || order.date || '').slice(0, 7) === month
+      );
+      return {
+        month,
+        agencyFee,
+        adSpend,
+        totalSpend: agencyFee + adSpend,
+        leads: monthLeads,
+        orders: monthOrders.length,
+        revenue: monthOrders.reduce((sum, order) => sum + order.value, 0),
+      };
+    });
+  }, [campaignExpenses, agencyFees, leads, orders]);
+
+  const reportingWindow = monthlyRows.length
+    ? `${monthLabel(monthlyRows[monthlyRows.length - 1].month)} – ${monthLabel(monthlyRows[0].month)}`
+    : 'No activity recorded';
 
   const channelMix = useMemo(() => {
     const map = new Map();
@@ -667,38 +756,152 @@ export default function MarketingPage() {
         </PageActions>
       </PageHeaderBar>
 
-      <MiniStats
-        items={[
-          { label: 'Marketing spend', value: formatCompactINR(totalSpend), hint: `${active} active campaigns` },
-          {
-            label: 'Budget committed',
-            value: formatCompactINR(totalBudget),
-            hint: totalBudget ? `${Math.round((totalSpend / totalBudget) * 100)}% used` : 'No budget set',
-          },
-          {
-            label: 'Attributed leads',
-            value: formatNumber(attributedLeads),
-            hint: `${qualifiedLeads} qualified in CRM`,
-          },
-          {
-            label: 'Quotation value',
-            value: formatCompactINR(quoteValue),
-            hint: `${quoteCount} quotations · pipeline, not revenue`,
-          },
-          {
-            label: 'Converted orders',
-            value: formatNumber(attributedOrders),
-            hint: 'Attributed demo orders',
-          },
-          {
-            label: 'Confirmed revenue',
-            value: formatCompactINR(confirmedRevenue),
-            hint: 'Booked order value only',
-          },
-        ]}
-      />
+      <OwnerGrid>
+        <OwnerCard>
+          <span>Total marketing spend</span>
+          <strong>{formatCompactINR(totalMarketingSpend)}</strong>
+          <em>Ad spend + agency fees</em>
+        </OwnerCard>
+        <OwnerCard>
+          <span>Agency fees</span>
+          <strong>{formatCompactINR(agencyFeeTotal)}</strong>
+          <em>{agencyFees.length} retainer invoices</em>
+        </OwnerCard>
+        <OwnerCard>
+          <span>Leads generated</span>
+          <strong>{formatNumber(attributedLeads)}</strong>
+          <em>{formatCompactINR(totalSpend)} ad spend</em>
+        </OwnerCard>
+        <OwnerCard>
+          <span>Qualified leads</span>
+          <strong>{formatNumber(qualifiedLeads)}</strong>
+          <em>Qualified, proposal or won</em>
+        </OwnerCard>
+        <OwnerCard>
+          <span>Orders won</span>
+          <strong>{formatNumber(attributedOrders)}</strong>
+          <em>Booked, not quotations</em>
+        </OwnerCard>
+        <OwnerCard>
+          <span>Confirmed revenue</span>
+          <strong>{formatCompactINR(confirmedRevenue)}</strong>
+          <em>Booked order value only</em>
+        </OwnerCard>
+        <OwnerCard $highlight>
+          <span>Return on investment</span>
+          <strong>{`${ownerRoi.toFixed(0)}%`}</strong>
+          <em>Across {reportingWindow}</em>
+        </OwnerCard>
+      </OwnerGrid>
+
+      <div style={{ height: 14 }} />
+      <Note style={{ marginTop: 0 }}>
+        <Target size={14} style={{ color: colors.copper, marginTop: 1, flex: '0 0 auto' }} />
+        <p>
+          <strong>ROI = (Attributed confirmed revenue − Total marketing spend) ÷ Total marketing spend × 100.</strong>{' '}
+          Reporting period: {reportingWindow}. Total spend combines manually logged ad spend and agency
+          retainer fees; leads and open quotations are never counted as revenue, and only booked order
+          value is attributed. No live Google or Meta ad account is connected to this demo workspace.
+        </p>
+      </Note>
 
       <div style={{ height: 18 }} />
+
+      <Panel>
+        <PanelHeader>
+          <div>
+            <PanelTitle>Monthly summary</PanelTitle>
+            <div style={{ marginTop: 4, fontSize: 12, color: colors.muted }}>
+              Agency fee, ad spend, spend, leads, won orders and confirmed revenue by month
+            </div>
+          </div>
+          <StatusChip $tone="info">{reportingWindow}</StatusChip>
+        </PanelHeader>
+        <PanelBody $flush>
+          <DataTable
+            columns={[
+              {
+                key: 'month',
+                label: 'Month',
+                render: (row) => <CellPrimary>{monthLabel(row.month)}</CellPrimary>,
+              },
+              {
+                key: 'agencyFee',
+                label: 'Agency fee',
+                align: 'right',
+                render: (row) => formatCompactINR(row.agencyFee),
+              },
+              {
+                key: 'adSpend',
+                label: 'Ad spend',
+                align: 'right',
+                render: (row) => formatCompactINR(row.adSpend),
+              },
+              {
+                key: 'totalSpend',
+                label: 'Total spend',
+                align: 'right',
+                render: (row) => <CellStrong>{formatCompactINR(row.totalSpend)}</CellStrong>,
+              },
+              {
+                key: 'leads',
+                label: 'Leads',
+                align: 'right',
+                render: (row) => formatNumber(row.leads),
+              },
+              {
+                key: 'orders',
+                label: 'Won orders',
+                align: 'right',
+                render: (row) => formatNumber(row.orders),
+              },
+              {
+                key: 'revenue',
+                label: 'Confirmed revenue',
+                align: 'right',
+                render: (row) => (
+                  <span style={{ fontWeight: 700, color: colors.success, fontVariantNumeric: 'tabular-nums' }}>
+                    {formatCompactINR(row.revenue)}
+                  </span>
+                ),
+              },
+            ]}
+            rows={monthlyRows}
+            minWidth="760px"
+            emptyTitle="No months recorded"
+            emptyHint="Logged ad spend and agency fees will build this summary."
+          />
+        </PanelBody>
+      </Panel>
+
+      <div style={{ height: 18 }} />
+
+      <Panel>
+        <PanelHeader>
+          <div>
+            <PanelTitle>Campaign &amp; agency detail</PanelTitle>
+            <div style={{ marginTop: 4, fontSize: 12, color: colors.muted }}>
+              Budgets, spend entries, campaign returns, agency profile and creative briefs
+            </div>
+          </div>
+          <Button $variant="light" $size="sm" onClick={() => setDetailsOpen((open) => !open)}>
+            {detailsOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+            {detailsOpen ? 'Hide detailed records' : 'Show detailed records'}
+          </Button>
+        </PanelHeader>
+        {!detailsOpen ? (
+          <PanelBody>
+            <p style={{ fontSize: 11.5, color: colors.muted, lineHeight: 1.6 }}>
+              {rows.length} campaigns · {campaignExpenses.length} ad spend entries · {agencyFees.length} agency
+              fees · {agencyBriefs.length} creative briefs. Expand for campaign-level spend and returns, or
+              select any campaign in the register for its full attribution drawer.
+            </p>
+          </PanelBody>
+        ) : null}
+      </Panel>
+
+      {detailsOpen ? (
+        <>
 
       <Grid $cols="minmax(0, 1.35fr) minmax(0, 1fr)" $colsMd="1fr" $gap="18px">
         <Panel>
@@ -1007,6 +1210,8 @@ export default function MarketingPage() {
           </PanelFooter>
         </Panel>
       </Grid>
+        </>
+      ) : null}
 
       <AppModal
         open={formOpen}

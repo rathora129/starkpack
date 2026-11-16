@@ -365,7 +365,7 @@ export function CheckboxField({ label, name }) {
 export const FieldHintBox = styled.div`
   border: 1px solid ${colors.line};
   border-radius: ${radii.sm};
-  background: #FBFAF6;
+  background: #FAFAFD;
   padding: 12px 14px;
   font-size: 11.5px;
   color: ${colors.muted};

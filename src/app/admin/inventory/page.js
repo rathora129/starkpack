@@ -41,6 +41,7 @@ import {
   ProgressTrack,
   ProgressFill,
   Divider,
+  Grid,
 } from '@/components/ui/primitives';
 import { FilterChips, SearchInput, QuickSelect, Toolbar } from '@/components/ui/Controls';
 import { DataTable, CellPrimary, CellSecondary, CellStrong } from '@/components/ui/DataTable';
@@ -494,7 +495,7 @@ export default function InventoryPage() {
 
       <div style={{ height: 18 }} />
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 320px', gap: 18 }}>
+      <Grid $cols="minmax(0, 1fr) 320px" $colsMd="minmax(0, 1fr)" $colsSm="minmax(0, 1fr)">
         <Panel>
           <PanelHeader>
             <div>
@@ -595,7 +596,7 @@ export default function InventoryPage() {
             </PanelBody>
           </Panel>
         </div>
-      </div>
+      </Grid>
 
       <div style={{ height: 18 }} />
 

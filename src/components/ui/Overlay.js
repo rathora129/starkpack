@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import styled, { keyframes } from 'styled-components';
 import { X, AlertTriangle } from 'lucide-react';
@@ -178,10 +178,47 @@ function useMounted() {
   return mounted;
 }
 
+function useFocusTrap(open, ref) {
+  useEffect(() => {
+    if (!open) return undefined;
+    const node = ref.current;
+    if (!node) return undefined;
+    const previous = document.activeElement;
+    const selector =
+      'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    const timer = setTimeout(() => {
+      const first = node.querySelector(selector);
+      (first || node).focus?.();
+    }, 0);
+    const onKey = (event) => {
+      if (event.key !== 'Tab') return;
+      const items = [...node.querySelectorAll(selector)].filter((el) => el.offsetParent !== null);
+      if (!items.length) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (event.shiftKey && (document.activeElement === first || document.activeElement === node)) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    node.addEventListener('keydown', onKey);
+    return () => {
+      clearTimeout(timer);
+      node.removeEventListener('keydown', onKey);
+      previous?.focus?.();
+    };
+  }, [open, ref]);
+}
+
 export function AppModal({ open, onClose, title, description, children, footer, size = 'md', flush = false }) {
   const mounted = useMounted();
+  const panelRef = useRef(null);
   useLockBody(open);
   useEscape(open, onClose);
+  useFocusTrap(open, panelRef);
   if (!mounted || !open) return null;
   return createPortal(
     <Overlay
@@ -189,7 +226,7 @@ export function AppModal({ open, onClose, title, description, children, footer, 
         if (event.target === event.currentTarget) onClose?.();
       }}
     >
-      <ModalPanel $size={size} role="dialog" aria-modal="true" aria-label={title || 'Dialog'}>
+      <ModalPanel ref={panelRef} $size={size} role="dialog" aria-modal="true" aria-label={title || 'Dialog'} tabIndex={-1}>
         <Head>
           <HeadText>
             {title ? <Title>{title}</Title> : null}
@@ -209,8 +246,10 @@ export function AppModal({ open, onClose, title, description, children, footer, 
 
 export function Drawer({ open, onClose, title, description, children, footer, width = '560px' }) {
   const mounted = useMounted();
+  const panelRef = useRef(null);
   useLockBody(open);
   useEscape(open, onClose);
+  useFocusTrap(open, panelRef);
   if (!mounted || !open) return null;
   return createPortal(
     <DrawerOverlay
@@ -218,7 +257,7 @@ export function Drawer({ open, onClose, title, description, children, footer, wi
         if (event.target === event.currentTarget) onClose?.();
       }}
     >
-      <DrawerPanel $width={width} role="dialog" aria-modal="true" aria-label={title || 'Details'}>
+      <DrawerPanel ref={panelRef} $width={width} role="dialog" aria-modal="true" aria-label={title || 'Details'} tabIndex={-1}>
         <Head>
           <HeadText>
             {title ? <Title>{title}</Title> : null}

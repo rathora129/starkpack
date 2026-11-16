@@ -19,6 +19,8 @@ import { faqs } from '@/data/catalog';
 import { useDemoStore } from '@/store/useDemoStore';
 import { notify } from '@/store/useUiStore';
 import { colors, fonts, radii, shadows, transitions } from '@/lib/theme';
+import { usePageSections } from '@/hooks/usePageSections';
+import { captureAttribution } from '@/lib/attribution';
 import {
   Container,
   Section,
@@ -33,6 +35,7 @@ import {
   CTABand,
   BandActions,
 } from '@/components/site/ui';
+import { CmsPageFlow, CmsSection } from '@/components/site/CmsPageFlow';
 import { TextField, TextAreaField, SelectField, FormGrid } from '@/components/ui/FormFields';
 
 const Layout = styled.div`
@@ -177,7 +180,7 @@ const Submit = styled.button`
   border-radius: ${radii.sm};
   border: 1px solid ${colors.forest};
   background: ${colors.forest};
-  color: #F9F6EE;
+  color: #F6F6FF;
   font-family: ${fonts.sans};
   font-size: 12.5px;
   font-weight: 700;
@@ -303,13 +306,21 @@ const validation = Yup.object({
 });
 
 export default function ContactPage() {
+  const { section } = usePageSections('/contact');
+  const hero = section('hero', {
+    kicker: 'Contact',
+    title: "Let's talk packaging.",
+    body: 'A packaging consultant — not a call centre — will respond within one business day. Share a product, a constraint or a deadline and we will come back with something useful.',
+  });
+  const faq = section('faq', { kicker: 'Before you ask', title: 'Frequently asked questions.' });
   const contact = useDemoStore((state) => state.cms.contact);
   const addLead = useDemoStore((state) => state.addLead);
   const [submitted, setSubmitted] = useState(null);
   const [openFaq, setOpenFaq] = useState(0);
 
   return (
-    <>
+    <CmsPageFlow slug="/contact" knownKeys={['hero', 'form', 'faq', 'cta']}>
+      <CmsSection sectionKey="hero">
       <PageIntro>
         <Container>
           <Breadcrumb>
@@ -317,12 +328,9 @@ export default function ContactPage() {
             <span>/</span>
             Contact
           </Breadcrumb>
-          <Kicker>Contact</Kicker>
-          <IntroTitle>Let&apos;s talk packaging.</IntroTitle>
-          <IntroLede>
-            A packaging consultant — not a call centre — will respond within one business day. Share a product,
-            a constraint or a deadline and we will come back with something useful.
-          </IntroLede>
+          <Kicker>{hero.kicker}</Kicker>
+          <IntroTitle>{hero.title}</IntroTitle>
+          <IntroLede>{hero.body}</IntroLede>
           <IntroActions>
             <Cta href={`tel:${contact.phone.replace(/[^+0-9]/g, '')}`} variant="primary" size="md">
               <Phone size={14} /> {contact.phone}
@@ -333,7 +341,9 @@ export default function ContactPage() {
           </IntroActions>
         </Container>
       </PageIntro>
+      </CmsSection>
 
+      <CmsSection sectionKey="form">
       <Section>
         <Container>
           <Layout>
@@ -455,6 +465,7 @@ export default function ContactPage() {
                       validationSchema={validation}
                       onSubmit={(values, helpers) => {
                         const lead = addLead({
+                          ...captureAttribution(),
                           company: values.company,
                           contact: values.name,
                           title: 'Website enquiry',
@@ -514,10 +525,12 @@ export default function ContactPage() {
           </Layout>
         </Container>
       </Section>
+      </CmsSection>
 
+      <CmsSection sectionKey="faq">
       <Section $tone="paper" $tight>
         <Container>
-          <SectionHead kicker="Before you ask" title="Frequently asked questions." center flush />
+          <SectionHead kicker={faq.kicker} title={faq.title} center flush />
         </Container>
         <Container style={{ marginTop: 30 }}>
           <FaqWrap>
@@ -536,7 +549,9 @@ export default function ContactPage() {
           </FaqWrap>
         </Container>
       </Section>
+      </CmsSection>
 
+      <CmsSection sectionKey="cta">
       <Section $tight>
         <Container>
           <CTABand>
@@ -556,6 +571,7 @@ export default function ContactPage() {
           </CTABand>
         </Container>
       </Section>
-    </>
+      </CmsSection>
+    </CmsPageFlow>
   );
 }

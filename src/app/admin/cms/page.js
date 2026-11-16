@@ -11,7 +11,6 @@ import {
   Eye,
   EyeOff,
   CheckCircle2,
-  RefreshCw,
   AlertTriangle,
   Search,
   Mail,
@@ -27,10 +26,17 @@ import {
   Newspaper,
   Boxes,
   Layers,
+  GripVertical,
+  ArrowUp,
+  ArrowDown,
+  Copy,
+  LayoutTemplate,
+  ChevronRight,
 } from 'lucide-react';
 import { useDemoStore } from '@/store/useDemoStore';
 import { notify } from '@/store/useUiStore';
 import { formatDate, formatDateTime } from '@/lib/format';
+import { useHydrated } from '@/hooks/useHydrated';
 import { colors, fonts, radii, shadows } from '@/lib/theme';
 import {
   PageHeaderBar,
@@ -50,8 +56,9 @@ import {
   Grid,
   EmptyState,
 } from '@/components/ui/primitives';
+import { LoadingButton } from '@/components/ui/Feedback';
 import { Segmented, SearchInput } from '@/components/ui/Controls';
-import { AppModal, ConfirmDialog } from '@/components/ui/Overlay';
+import { AppModal, ConfirmDialog, Drawer } from '@/components/ui/Overlay';
 import { TextField, TextAreaField, SelectField, SwitchField, FormGrid, FormActions } from '@/components/ui/FormFields';
 
 const Preview = styled.div`
@@ -85,8 +92,8 @@ const PreviewBar = styled.div`
 
 const PreviewHero = styled.div`
   padding: 20px 18px 22px;
-  background: linear-gradient(150deg, #143D31 0%, #0C231C 100%);
-  color: #F9F6EE;
+  background: linear-gradient(150deg, #0D0A3B 0%, #121235 100%);
+  color: #F6F6FF;
   position: relative;
   overflow: hidden;
 
@@ -117,7 +124,7 @@ const PreviewHero = styled.div`
     letter-spacing: -0.02em;
     margin: 8px 0 8px;
     max-width: 95%;
-    color: #F9F6EE;
+    color: #F6F6FF;
   }
 
   p.copy {
@@ -300,6 +307,157 @@ const TabPanel = styled.div`
   border-bottom: 1px solid ${colors.lineSoft};
 `;
 
+const SectionItem = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid ${colors.lineSoft};
+  border-radius: ${radii.md};
+  background: ${({ $disabled }) => ($disabled ? colors.mist : '#fff')};
+  opacity: ${({ $disabled }) => ($disabled ? 0.72 : 1)};
+  cursor: grab;
+
+  & + & {
+    margin-top: 8px;
+  }
+
+  &[data-dragging='true'] {
+    border-color: ${colors.copper};
+    box-shadow: ${shadows.card};
+  }
+`;
+
+const SectionIndex = styled.span`
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  flex: 0 0 auto;
+  border-radius: 8px;
+  background: ${colors.paper};
+  border: 1px solid ${colors.lineSoft};
+  font-family: ${fonts.mono};
+  font-size: 10px;
+  font-weight: 700;
+  color: ${colors.muted};
+`;
+
+const SectionInfo = styled.div`
+  flex: 1;
+  min-width: 0;
+
+  strong {
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+    color: ${colors.ink};
+    line-height: 1.4;
+  }
+
+  p {
+    margin-top: 3px;
+    font-size: 10.5px;
+    line-height: 1.5;
+    color: ${colors.muted};
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  small {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 5px;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: ${colors.faint};
+  }
+`;
+
+const SectionTools = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 0 0 auto;
+`;
+
+const PreviewSection = styled.div`
+  padding: 10px 12px;
+  border: 1px solid ${colors.lineSoft};
+  border-radius: ${radii.sm};
+  background: #fff;
+
+  & + & {
+    margin-top: 6px;
+  }
+
+  span {
+    display: block;
+    font-size: 8.5px;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: ${colors.copperDeep};
+  }
+
+  strong {
+    display: block;
+    margin-top: 3px;
+    font-family: ${fonts.display};
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    color: ${colors.ink};
+  }
+
+  p {
+    margin-top: 3px;
+    font-size: 10px;
+    line-height: 1.5;
+    color: ${colors.muted};
+  }
+`;
+
+const SECTION_TYPES = [
+  'Hero',
+  'Logo strip',
+  'Feature grid',
+  'Product grid',
+  'Split feature',
+  'Editorial',
+  'Timeline',
+  'People grid',
+  'Locations',
+  'Portfolio grid',
+  'Testimonials',
+  'CTA band',
+  'Process',
+  'Stats',
+  'Certifications',
+  'Documents',
+  'FAQ',
+  'Contact form',
+  'Enquiry form',
+  'Service grid',
+  'Solution grid',
+  'Industry grid',
+  'Case grid',
+  'Article grid',
+  'Featured article',
+  'Specification',
+  'Trust strip',
+  'Rich text',
+];
+
+const sectionValidation = Yup.object({
+  title: Yup.string().trim().min(3, 'Add a section heading').required('Section heading is required'),
+});
+
 const homeValidation = Yup.object({
   headline: Yup.string().trim().min(12, 'Headline is too short').required('Headline is required'),
   subcopy: Yup.string().trim().min(20, 'Add a little more detail').required('Subcopy is required'),
@@ -372,16 +530,55 @@ const COLLECTIONS = {
     fields: [
       { name: 'name', label: 'Product name', type: 'text', required: true },
       { name: 'slug', label: 'Catalogue slug', type: 'text', required: true, hint: 'Links to the public product detail page.' },
-      { name: 'category', label: 'Category', type: 'select', options: ['Corrugated', 'Cartons', 'Rigid', 'Retail', 'Food', 'Industrial'] },
-      { name: 'summary', label: 'Card summary', type: 'textarea', required: true, rows: 3 },
+      { name: 'category', label: 'Category', type: 'select', options: ['Corrugated', 'Folding cartons', 'Rigid', 'Retail', 'Food', 'E-commerce', 'Industrial'] },
+      { name: 'eyebrow', label: 'Eyebrow label', type: 'text', hint: 'Small label above the product title, e.g. Transit packaging.' },
+      { name: 'tagline', label: 'Tagline', type: 'text', hint: 'Shown on cards and under the detail title.' },
+      { name: 'summary', label: 'Card summary', type: 'textarea', required: true, rows: 2 },
+      { name: 'description', label: 'Detail description', type: 'textarea', rows: 4, hint: 'Full paragraph shown on the product detail page.' },
+      { name: 'image', label: 'Primary image path', type: 'text', hint: 'Use an existing asset, e.g. /images/hero.jpg' },
+      { name: 'imageAlt', label: 'Image alt text', type: 'text' },
+      { name: 'galleryText', label: 'Gallery image paths', type: 'textarea', rows: 3, hint: 'One image path per line. Shown as thumbnails on the detail page.' },
+      { name: 'startingAt', label: 'Starting price (₹)', type: 'number' },
+      { name: 'unit', label: 'Price unit', type: 'text', hint: 'box, carton, bag, kit…' },
+      { name: 'moq', label: 'Minimum order', type: 'text' },
+      { name: 'turnaround', label: 'Lead time', type: 'text' },
+      { name: 'specsText', label: 'Specifications', type: 'textarea', rows: 5, hint: 'One per line as Label: value.' },
+      { name: 'applicationsText', label: 'Applications', type: 'textarea', rows: 2, hint: 'Comma separated, e.g. Retail stores, Events, Hospitality' },
+      { name: 'seoTitle', label: 'SEO title', type: 'text' },
+      { name: 'seoDescription', label: 'SEO description', type: 'textarea', rows: 2 },
       { name: 'badge', label: 'Badge', type: 'text' },
+      { name: 'order', label: 'Display order', type: 'number', hint: 'Lower numbers appear first.' },
       { name: 'featured', label: 'Feature on homepage', type: 'switch', description: 'Shows the product in the homepage range.' },
       { name: 'published', label: 'Published on website', type: 'switch', description: 'Unpublished products are hidden from the public catalogue.' },
     ],
-    defaults: { name: '', slug: '', category: 'Corrugated', summary: '', badge: '', featured: false, published: false },
+    defaults: {
+      name: '',
+      slug: '',
+      category: 'Corrugated',
+      eyebrow: '',
+      tagline: '',
+      summary: '',
+      description: '',
+      image: '',
+      imageAlt: '',
+      galleryText: '',
+      startingAt: 0,
+      unit: 'unit',
+      moq: '',
+      turnaround: '',
+      specsText: '',
+      applicationsText: '',
+      seoTitle: '',
+      seoDescription: '',
+      badge: '',
+      order: 9,
+      featured: false,
+      published: false,
+    },
     titleOf: (item) => item.name,
-    metaOf: (item) => `${item.category} · /products/${item.slug}`,
+    metaOf: (item) => `${item.category} · position ${item.order ?? '—'} · /products/${item.slug}`,
     excerptOf: (item) => item.summary,
+    sortOf: (item) => item.order ?? 99,
     statusOf: (item) => (item.published ? 'Published' : 'Draft'),
     hrefOf: (item) => (item.published ? `/products/${item.slug}` : null),
   },
@@ -493,11 +690,19 @@ const buildSchema = (config) => {
 };
 
 export default function CmsPage() {
+  const hydrated = useHydrated();
   const cms = useDemoStore((state) => state.cms);
   const saveCms = useDemoStore((state) => state.saveCms);
   const saveCmsItem = useDemoStore((state) => state.saveCmsItem);
   const deleteCmsItem = useDemoStore((state) => state.deleteCmsItem);
   const toggleCmsPublish = useDemoStore((state) => state.toggleCmsPublish);
+  const savePageSection = useDemoStore((state) => state.savePageSection);
+  const deletePageSection = useDemoStore((state) => state.deletePageSection);
+  const duplicatePageSection = useDemoStore((state) => state.duplicatePageSection);
+  const togglePageSection = useDemoStore((state) => state.togglePageSection);
+  const movePageSection = useDemoStore((state) => state.movePageSection);
+  const reorderPageSections = useDemoStore((state) => state.reorderPageSections);
+  const duplicateCmsPage = useDemoStore((state) => state.duplicateCmsPage);
 
   const pages = useDemoStore((state) => state.cmsPages);
   const banners = useDemoStore((state) => state.cmsBanners);
@@ -517,19 +722,35 @@ export default function CmsPage() {
   const [query, setQuery] = useState('');
   const [editor, setEditor] = useState(null);
   const [deleting, setDeleting] = useState(null);
+  const [sectionPageId, setSectionPageId] = useState(null);
+  const [sectionModal, setSectionModal] = useState(null);
+  const [draggingSection, setDraggingSection] = useState(null);
+
+  const sectionPage = pages.find((page) => page.id === sectionPageId) || null;
+  const pageSections = sectionPage
+    ? [...(sectionPage.sections || [])].sort((a, b) => (a.order || 0) - (b.order || 0))
+    : [];
 
   const activeCollection = COLLECTIONS[tab] || null;
-  const items = activeCollection ? collections[tab] || [] : [];
+  const items = useMemo(
+    () => (activeCollection ? collections[tab] || [] : []),
+    [activeCollection, collections, tab]
+  );
 
   const filtered = useMemo(() => {
     if (!activeCollection) return [];
     const q = query.trim().toLowerCase();
-    if (!q) return items;
-    return items.filter((item) =>
-      `${activeCollection.titleOf(item)} ${activeCollection.metaOf(item)} ${activeCollection.excerptOf(item) || ''}`
-        .toLowerCase()
-        .includes(q)
-    );
+    const list = q
+      ? items.filter((item) =>
+          `${activeCollection.titleOf(item)} ${activeCollection.metaOf(item)} ${activeCollection.excerptOf(item) || ''}`
+            .toLowerCase()
+            .includes(q)
+        )
+      : items;
+    if (activeCollection.sortOf) {
+      return [...list].sort((a, b) => activeCollection.sortOf(a) - activeCollection.sortOf(b));
+    }
+    return list;
   }, [activeCollection, items, query]);
 
   const counts = useMemo(() => {
@@ -547,7 +768,7 @@ export default function CmsPage() {
 
   const submit = async (section, values, resetForm) => {
     setSaving(true);
-    await new Promise((resolve) => setTimeout(resolve, 280));
+    await Promise.resolve();
     saveCms(section, values);
     setSaving(false);
     resetForm({ values });
@@ -590,6 +811,66 @@ export default function CmsPage() {
     deleteCmsItem(tab, deleting.id);
     notify(`${activeCollection.singular} deleted`, `${activeCollection.titleOf(deleting)} removed from the demo content library.`, 'info');
     setDeleting(null);
+  };
+
+  const saveSection = (values, helpers) => {
+    if (!sectionPage) return;
+    savePageSection(sectionPage.id, {
+      ...values,
+      id: sectionModal?.section?.id,
+      key: values.key?.trim() || values.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''),
+      enabled: values.enabled !== false,
+    });
+    notify(
+      sectionModal?.section ? 'Section updated' : 'Section added',
+      `${values.title} saved on ${sectionPage.title}. ${sectionPage.status === 'Published' ? 'The published page now reflects this change.' : 'Publish the page to make it live.'}`,
+      'success'
+    );
+    setSectionModal(null);
+    helpers?.resetForm?.();
+  };
+
+  const openSectionEditor = (section = null) => {
+    setSectionModal({
+      section,
+      values: section
+        ? {
+            type: section.type,
+            key: section.key || '',
+            title: section.title || '',
+            kicker: section.kicker || '',
+            body: section.body || '',
+            ctaLabel: section.ctaLabel || '',
+            ctaHref: section.ctaHref || '',
+            image: section.image || '',
+            layout: section.layout || 'default',
+            background: section.background || 'default',
+            enabled: section.enabled !== false,
+          }
+        : {
+            type: 'Feature grid',
+            key: '',
+            title: '',
+            kicker: '',
+            body: '',
+            ctaLabel: '',
+            ctaHref: '',
+            image: '',
+            layout: 'default',
+            background: 'default',
+            enabled: true,
+          },
+    });
+  };
+
+  const togglePagePublish = () => {
+    if (!sectionPage) return;
+    toggleCmsPublish('pages', sectionPage.id);
+    notify(
+      'Publish status updated',
+      `${sectionPage.title} ${sectionPage.status === 'Published' ? 'moved to draft' : 'published to the website'}.`,
+      'success'
+    );
   };
 
   const showCollection = Boolean(activeCollection);
@@ -677,9 +958,9 @@ export default function CmsPage() {
                       <span style={{ fontSize: 10.5, color: colors.faint }}>
                         Last updated {formatDateTime(cms.updatedAt)} by {cms.updatedBy}
                       </span>
-                      <Button type="submit" $variant="primary" $size="sm" disabled={saving}>
-                        {saving ? <RefreshCw size={14} /> : <Save size={14} />} {saving ? 'Publishing…' : 'Publish changes'}
-                      </Button>
+                      <LoadingButton type="submit" $variant="primary" $size="sm" loading={saving} loadingLabel="Publishing…">
+                        <Save size={14} /> Publish changes
+                      </LoadingButton>
                     </PanelFooter>
                   </Form>
                 )}
@@ -780,9 +1061,9 @@ export default function CmsPage() {
                 </PanelBody>
                 <PanelFooter>
                   <span style={{ fontSize: 10.5, color: colors.faint }}>Metadata applies site-wide via Next.js metadata.</span>
-                  <Button type="submit" $variant="primary" $size="sm" disabled={saving}>
+                  <LoadingButton type="submit" $variant="primary" $size="sm" loading={saving} loadingLabel="Saving…">
                     <Save size={14} /> Save SEO
-                  </Button>
+                  </LoadingButton>
                 </PanelFooter>
               </Form>
             )}
@@ -817,9 +1098,9 @@ export default function CmsPage() {
                 </PanelBody>
                 <PanelFooter>
                   <span style={{ fontSize: 10.5, color: colors.faint }}>Used by the contact page and RFQ confirmations.</span>
-                  <Button type="submit" $variant="primary" $size="sm" disabled={saving}>
+                  <LoadingButton type="submit" $variant="primary" $size="sm" loading={saving} loadingLabel="Saving…">
                     <Save size={14} /> Save contact
-                  </Button>
+                  </LoadingButton>
                 </PanelFooter>
               </Form>
             )}
@@ -852,6 +1133,16 @@ export default function CmsPage() {
                     </RowMain>
                     <RowSide>
                       <StatusChip $tone={status === 'Published' ? 'success' : status === 'Available' ? 'info' : 'neutral'}>{status}</StatusChip>
+                      {tab === 'pages' ? (
+                        <Button
+                          $variant="light"
+                          $size="xs"
+                          onClick={() => setSectionPageId(item.id)}
+                          aria-label={`Manage sections for ${activeCollection.titleOf(item)}`}
+                        >
+                          <LayoutTemplate size={12} /> Sections
+                        </Button>
+                      ) : null}
                       {href ? (
                         <Button $variant="ghost" $size="xs" onClick={() => window.open(href, '_blank', 'noopener')} aria-label={`Open ${activeCollection.titleOf(item)} on the website`}>
                           <ExternalLink size={12} />
@@ -892,7 +1183,9 @@ export default function CmsPage() {
                   ? 'Publishing updates the public website instantly in this demo.'
                   : 'Media assets are referenced by pages, banners and articles.'}
               </span>
-              <span style={{ fontSize: 10.5, color: colors.faint }}>Updated {formatDate(new Date().toISOString())}</span>
+              <span style={{ fontSize: 10.5, color: colors.faint }}>
+                Updated {hydrated ? formatDate(new Date().toISOString()) : '—'}
+              </span>
             </PanelFooter>
           </>
         ) : null}
@@ -948,6 +1241,280 @@ export default function CmsPage() {
                 </Button>
               </FormActions>
             </Form>
+          </Formik>
+        ) : null}
+      </AppModal>
+
+      <Drawer
+        open={Boolean(sectionPage)}
+        onClose={() => {
+          setSectionPageId(null);
+          setSectionModal(null);
+        }}
+        title={sectionPage ? sectionPage.title : ''}
+        description={sectionPage ? `${sectionPage.slug} · ${pageSections.length} sections` : ''}
+        width="660px"
+        footer={
+          sectionPage ? (
+            <>
+              <Button $variant="secondary" $size="sm" onClick={togglePagePublish}>
+                {sectionPage.status === 'Published' ? <EyeOff size={14} /> : <Eye size={14} />}
+                {sectionPage.status === 'Published' ? 'Unpublish' : 'Publish'}
+              </Button>
+              <Button
+                $variant="light"
+                $size="sm"
+                onClick={() => {
+                  const copy = duplicateCmsPage(sectionPage.id);
+                  if (copy) {
+                    setSectionPageId(copy.id);
+                    notify('Page duplicated', `${copy.title} created as a draft.`, 'success');
+                  }
+                }}
+              >
+                <Copy size={14} /> Duplicate page
+              </Button>
+              <Button $variant="primary" $size="sm" onClick={() => openSectionEditor()}>
+                <Plus size={14} /> Add section
+              </Button>
+            </>
+          ) : null
+        }
+      >
+        {sectionPage ? (
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
+              <StatusChip $tone={sectionPage.status === 'Published' ? 'success' : 'neutral'}>
+                {sectionPage.status}
+              </StatusChip>
+              <span style={{ fontSize: 10.5, color: colors.faint }}>
+                {pageSections.filter((section) => section.enabled !== false).length} visible ·{' '}
+                {pageSections.length} total
+              </span>
+              <Button
+                $variant="ghost"
+                $size="xs"
+                style={{ marginLeft: 'auto' }}
+                onClick={() => window.open(sectionPage.slug, '_blank', 'noopener')}
+              >
+                <ExternalLink size={12} /> Open page
+              </Button>
+            </div>
+
+            <div
+              style={{
+                padding: 12,
+                border: `1px solid ${colors.lineSoft}`,
+                borderRadius: radii.md,
+                background: colors.cream,
+                marginBottom: 16,
+              }}
+            >
+              <p
+                style={{
+                  fontSize: 9.5,
+                  fontWeight: 700,
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                  color: colors.faint,
+                  marginBottom: 8,
+                }}
+              >
+                Page preview
+              </p>
+              {pageSections.filter((section) => section.enabled !== false).length === 0 ? (
+                <p style={{ fontSize: 10.5, color: colors.muted }}>All sections are hidden. Publish at least one section.</p>
+              ) : (
+                pageSections
+                  .filter((section) => section.enabled !== false)
+                  .slice(0, 4)
+                  .map((section) => (
+                    <PreviewSection key={section.id}>
+                      <span>
+                        {section.type}
+                        {section.kicker ? ` · ${section.kicker}` : ''}
+                      </span>
+                      <strong>{section.title || 'Untitled section'}</strong>
+                      {section.body ? <p>{section.body}</p> : null}
+                    </PreviewSection>
+                  ))
+              )}
+              {pageSections.filter((section) => section.enabled !== false).length > 4 ? (
+                <p style={{ marginTop: 8, fontSize: 10, color: colors.faint }}>
+                  + {pageSections.filter((section) => section.enabled !== false).length - 4} more sections
+                </p>
+              ) : null}
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 8 }}>
+              <p style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: colors.faint }}>
+                Sections in page order
+              </p>
+              <span style={{ fontSize: 10, color: colors.faint }}>Drag a row or use the arrows</span>
+            </div>
+
+            {pageSections.length === 0 ? (
+              <EmptyState
+                title="No sections yet"
+                description="Add the first section to start building this page."
+                action={
+                  <Button $variant="primary" $size="sm" onClick={() => openSectionEditor()}>
+                    <Plus size={14} /> Add section
+                  </Button>
+                }
+              />
+            ) : (
+              pageSections.map((section, index) => (
+                <SectionItem
+                  key={section.id}
+                  $disabled={section.enabled === false}
+                  data-dragging={draggingSection === section.id}
+                  draggable
+                  onDragStart={() => setDraggingSection(section.id)}
+                  onDragEnd={() => setDraggingSection(null)}
+                  onDragOver={(event) => event.preventDefault()}
+                  onDrop={() => {
+                    if (draggingSection && draggingSection !== section.id) {
+                      reorderPageSections(sectionPage.id, draggingSection, index);
+                      notify('Section reordered', `${section.title || 'Section'} moved to position ${index + 1}.`, 'info');
+                    }
+                    setDraggingSection(null);
+                  }}
+                >
+                  <GripVertical size={14} style={{ color: colors.faint, marginTop: 6, flex: '0 0 auto' }} />
+                  <SectionIndex>{String(index + 1).padStart(2, '0')}</SectionIndex>
+                  <SectionInfo>
+                    <strong>{section.title || 'Untitled section'}</strong>
+                    <p>{section.body || 'No supporting copy yet.'}</p>
+                    <small>
+                      <LayoutTemplate size={9} /> {section.type}
+                      {section.key ? ` · ${section.key}` : ''}
+                      {section.ctaLabel ? ` · CTA: ${section.ctaLabel}` : ''}
+                    </small>
+                  </SectionInfo>
+                  <SectionTools>
+                    <Button
+                      $variant="ghost"
+                      $size="xs"
+                      aria-label="Move section up"
+                      disabled={index === 0}
+                      onClick={() => movePageSection(sectionPage.id, section.id, -1)}
+                    >
+                      <ArrowUp size={12} />
+                    </Button>
+                    <Button
+                      $variant="ghost"
+                      $size="xs"
+                      aria-label="Move section down"
+                      disabled={index === pageSections.length - 1}
+                      onClick={() => movePageSection(sectionPage.id, section.id, 1)}
+                    >
+                      <ArrowDown size={12} />
+                    </Button>
+                    <Button
+                      $variant="ghost"
+                      $size="xs"
+                      aria-label={section.enabled === false ? 'Show section' : 'Hide section'}
+                      onClick={() => togglePageSection(sectionPage.id, section.id)}
+                    >
+                      {section.enabled === false ? <EyeOff size={12} /> : <Eye size={12} />}
+                    </Button>
+                    <Button
+                      $variant="ghost"
+                      $size="xs"
+                      aria-label="Duplicate section"
+                      onClick={() => duplicatePageSection(sectionPage.id, section.id)}
+                    >
+                      <Copy size={12} />
+                    </Button>
+                    <Button
+                      $variant="ghost"
+                      $size="xs"
+                      aria-label="Edit section"
+                      onClick={() => openSectionEditor(section)}
+                    >
+                      <Pencil size={12} />
+                    </Button>
+                    <Button
+                      $variant="ghost"
+                      $size="xs"
+                      aria-label="Delete section"
+                      onClick={() => {
+                        deletePageSection(sectionPage.id, section.id);
+                        notify('Section removed', `${section.title || 'Section'} deleted from ${sectionPage.title}.`, 'info');
+                      }}
+                    >
+                      <Trash2 size={12} style={{ color: colors.danger }} />
+                    </Button>
+                  </SectionTools>
+                </SectionItem>
+              ))
+            )}
+
+            <p style={{ marginTop: 14, fontSize: 10.5, color: colors.faint, lineHeight: 1.55 }}>
+              Section edits are saved immediately in this demo. Hidden sections stay stored but do not
+              render on the public page.
+            </p>
+          </>
+        ) : null}
+      </Drawer>
+
+      <AppModal
+        open={Boolean(sectionModal)}
+        onClose={() => setSectionModal(null)}
+        title={sectionModal?.section ? 'Edit section' : 'Add section'}
+        description="Section content and settings update the page preview and the public website."
+        size="lg"
+      >
+        {sectionModal ? (
+          <Formik
+            initialValues={sectionModal.values}
+            validationSchema={sectionValidation}
+            onSubmit={saveSection}
+          >
+            {({ isSubmitting }) => (
+              <Form>
+                <FormGrid $cols={2}>
+                  <SelectField name="type" label="Section type" options={SECTION_TYPES} />
+                  <TextField name="key" label="Section key" hint="Stable identifier, e.g. hero or story." placeholder="hero" />
+                </FormGrid>
+                <div style={{ height: 12 }} />
+                <TextField name="kicker" label="Eyebrow / kicker" placeholder="Why Stark Packmate" />
+                <div style={{ height: 12 }} />
+                <TextAreaField name="title" label="Heading" rows={2} required />
+                <div style={{ height: 12 }} />
+                <TextAreaField name="body" label="Supporting copy" rows={4} />
+                <div style={{ height: 12 }} />
+                <FormGrid $cols={2}>
+                  <TextField name="ctaLabel" label="CTA label" placeholder="Explore products" />
+                  <TextField name="ctaHref" label="CTA link" placeholder="/products" />
+                  <TextField name="image" label="Image path" placeholder="/images/factory.jpg" />
+                  <SelectField
+                    name="layout"
+                    label="Layout"
+                    options={['default', 'split', 'strip', 'grid', 'centered', 'contained']}
+                  />
+                  <SelectField
+                    name="background"
+                    label="Background"
+                    options={['default', 'cream', 'paper', 'white', 'forest']}
+                  />
+                </FormGrid>
+                <SwitchField
+                  name="enabled"
+                  label="Visible on the published page"
+                  description="Hidden sections stay saved in the editor but do not render."
+                />
+                <FormActions>
+                  <Button type="button" $variant="secondary" $size="sm" onClick={() => setSectionModal(null)}>
+                    Cancel
+                  </Button>
+                  <LoadingButton type="submit" $variant="primary" $size="sm" loading={isSubmitting} loadingLabel="Saving…">
+                    <Save size={14} /> {sectionModal.section ? 'Save section' : 'Add section'}
+                  </LoadingButton>
+                </FormActions>
+              </Form>
+            )}
           </Formik>
         ) : null}
       </AppModal>

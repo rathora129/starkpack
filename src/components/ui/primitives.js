@@ -338,7 +338,7 @@ const toneColors = {
   info: { bg: colors.infoBg, fg: '#2B5D77', border: '#CFE1EA' },
   copper: { bg: colors.copperWash, fg: '#8A5524', border: '#EED8BC' },
   neutral: { bg: '#F1F0EA', fg: '#5C655F', border: '#E2DFD5' },
-  dark: { bg: colors.ink, fg: '#F9F6EE', border: colors.ink },
+  dark: { bg: colors.ink, fg: '#F6F6FF', border: colors.ink },
 };
 
 export const StatusChip = styled.span`
@@ -432,7 +432,7 @@ export const Avatar = styled.span`
   height: ${({ $size }) => ($size === 'sm' ? '28px' : $size === 'lg' ? '52px' : '36px')};
   border-radius: 50%;
   background: ${({ $bg }) => $bg || colors.forest};
-  color: ${({ $color }) => $color || '#F9F6EE'};
+  color: ${({ $color }) => $color || '#F6F6FF'};
   font-size: ${({ $size }) => ($size === 'sm' ? '10px' : $size === 'lg' ? '16px' : '12px')};
   font-weight: 700;
   letter-spacing: 0.02em;

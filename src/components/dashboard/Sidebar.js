@@ -1,13 +1,15 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ArrowUpRight, Globe, X } from 'lucide-react';
-import { adminNav } from '@/lib/nav';
+import { navForRole } from '@/lib/nav';
 import { colors, fonts, transitions } from '@/lib/theme';
 import { useDemoStore } from '@/store/useDemoStore';
 import { useUiStore } from '@/store/useUiStore';
+import { useAuthStore } from '@/store/useAuthStore';
 import Logo from '@/components/brand/Logo';
 
 const Aside = styled.aside`
@@ -15,7 +17,7 @@ const Aside = styled.aside`
   inset: 0 auto 0 0;
   width: 268px;
   background: ${colors.sidebar};
-  display: flex;
+  display: ${({ $mobile }) => ($mobile ? 'none' : 'flex')};
   flex-direction: column;
   z-index: 40;
   border-right: 1px solid rgba(255, 255, 255, 0.04);
@@ -51,9 +53,9 @@ const Top = styled.div`
 const CloseMobile = styled.button`
   display: none;
   place-items: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 7px;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(255, 255, 255, 0.05);
   color: rgba(255, 255, 255, 0.65);
@@ -168,7 +170,7 @@ const NavLink = styled(Link)`
   padding: 8.5px 12px;
   margin-bottom: 1px;
   border-radius: 8px;
-  color: ${({ $active }) => ($active ? '#FBF8F2' : 'rgba(249, 246, 238, 0.58)')};
+  color: ${({ $active }) => ($active ? '#FBFBFE' : 'rgba(249, 246, 238, 0.58)')};
   background: ${({ $active }) => ($active ? 'rgba(255, 255, 255, 0.075)' : 'transparent')};
   font-size: 12px;
   font-weight: ${({ $active }) => ($active ? '600' : '500')};
@@ -194,17 +196,18 @@ const NavLink = styled(Link)`
     color: ${({ $active }) => ($active ? colors.copperSoft : 'currentColor')};
   }
 
-  span {
-    flex: 1;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
   &:hover {
     background: rgba(255, 255, 255, 0.055);
-    color: #FBF8F2;
+    color: #FBFBFE;
   }
+`;
+
+const NavText = styled.span`
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 `;
 
 const Count = styled.span`
@@ -246,7 +249,7 @@ const SiteLink = styled(Link)`
 
   &:hover {
     background: rgba(255, 255, 255, 0.05);
-    color: #FBF8F2;
+    color: #FBFBFE;
   }
 `;
 
@@ -272,6 +275,12 @@ const Version = styled.p`
 export default function Sidebar({ mobile = false, $open = false }) {
   const pathname = usePathname();
   const setMobileNavOpen = useUiStore((state) => state.setMobileNavOpen);
+  const session = useAuthStore((state) => state.session);
+  const role = session?.role || 'owner';
+  const navGroups = navForRole(role);
+  const asideRef = useRef(null);
+  const closeRef = useRef(null);
+  const restoreFocus = useRef(false);
   const newLeads = useDemoStore((state) => state.leads.filter((lead) => lead.stage === 'New').length);
   const openQuotes = useDemoStore(
     (state) => state.quotes.filter((quote) => ['Sent', 'Negotiation'].includes(quote.status)).length
@@ -283,6 +292,37 @@ export default function Sidebar({ mobile = false, $open = false }) {
     (state) => state.inventory.filter((item) => item.onHand - item.allocated < item.reorder).length
   );
 
+  useEffect(() => {
+    if (!mobile) return undefined;
+    if ($open) {
+      restoreFocus.current = true;
+      const timer = setTimeout(() => closeRef.current?.focus(), 40);
+      return () => clearTimeout(timer);
+    }
+    if (restoreFocus.current) {
+      restoreFocus.current = false;
+      document.querySelector('[aria-label="Open navigation"]')?.focus();
+    }
+    return undefined;
+  }, [mobile, $open]);
+
+  const trapFocus = (event) => {
+    if (!mobile || !$open || event.key !== 'Tab') return;
+    const focusable = asideRef.current?.querySelectorAll(
+      'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    );
+    if (!focusable?.length) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  };
+
   const badgeFor = (key) => {
     if (key === 'leads') return newLeads;
     if (key === 'quotes') return openQuotes;
@@ -292,12 +332,23 @@ export default function Sidebar({ mobile = false, $open = false }) {
   };
 
   return (
-    <Aside $mobile={mobile} $open={$open}>
+    <Aside
+      ref={asideRef}
+      id={mobile ? 'admin-mobile-nav' : undefined}
+      $mobile={mobile}
+      $open={$open}
+      role={mobile ? 'dialog' : undefined}
+      aria-modal={mobile || undefined}
+      aria-label={mobile ? 'Admin navigation' : undefined}
+      aria-hidden={mobile && !$open ? true : undefined}
+      inert={mobile && !$open}
+      onKeyDown={trapFocus}
+    >
       <Top>
         <Logo inverse href="/admin" />
         {mobile ? (
-          <CloseMobile onClick={() => setMobileNavOpen(false)} aria-label="Close navigation">
-            <X size={15} />
+          <CloseMobile ref={closeRef} onClick={() => setMobileNavOpen(false)} aria-label="Close navigation">
+            <X size={16} />
           </CloseMobile>
         ) : null}
       </Top>
@@ -310,7 +361,7 @@ export default function Sidebar({ mobile = false, $open = false }) {
         <PlanChip>DEMO</PlanChip>
       </Workspace>
       <Nav>
-        {adminNav.map((group) => (
+        {navGroups.map((group) => (
           <Group key={group.group}>
             <GroupLabel>{group.group}</GroupLabel>
             {group.items.map((item) => {
@@ -328,7 +379,7 @@ export default function Sidebar({ mobile = false, $open = false }) {
                   onClick={() => setMobileNavOpen(false)}
                 >
                   <Icon size={16} strokeWidth={1.9} />
-                  <span>{item.label}</span>
+                  <NavText>{item.label}</NavText>
                   {count ? <Count>{count}</Count> : null}
                 </NavLink>
               );

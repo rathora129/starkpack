@@ -46,6 +46,7 @@ import {
   ProgressFill,
   EmptyState,
 } from '@/components/ui/primitives';
+import { LoadingButton } from '@/components/ui/Feedback';
 import { FilterChips, SearchInput, Segmented, Toolbar } from '@/components/ui/Controls';
 import { DataTable, CellPrimary, CellSecondary, CellStrong } from '@/components/ui/DataTable';
 import {
@@ -921,9 +922,9 @@ export default function OrdersPage() {
                 <Button type="button" $variant="secondary" $size="sm" onClick={() => setFormOpen(false)}>
                   Cancel
                 </Button>
-                <Button type="submit" $variant="primary" $size="sm" disabled={isSubmitting}>
+                <LoadingButton type="submit" $variant="primary" $size="sm" loading={isSubmitting} loadingLabel="Saving…">
                   {editing ? 'Save order' : 'Create order'} <ArrowRight size={14} />
-                </Button>
+                </LoadingButton>
               </FormActions>
             </Form>
           )}

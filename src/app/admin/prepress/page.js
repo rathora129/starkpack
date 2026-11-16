@@ -104,7 +104,7 @@ const PreviewTag = styled.span`
   left: 9px;
   z-index: 1;
   background: rgba(12, 35, 28, 0.78);
-  color: #F9F6EE;
+  color: #F6F6FF;
   backdrop-filter: blur(4px);
   border-radius: 4px;
   padding: 2px 6px;

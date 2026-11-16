@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useMemo, useState } from 'react';
 import styled from 'styled-components';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -13,7 +14,8 @@ import {
   ShieldCheck,
   Factory,
 } from 'lucide-react';
-import { products } from '@/data/catalog';
+import { products as catalogProducts } from '@/data/catalog';
+import { getProduct, mergeProducts } from '@/lib/products';
 import { useDemoStore } from '@/store/useDemoStore';
 import { downloadCSV } from '@/lib/format';
 import { colors, fonts, radii, shadows } from '@/lib/theme';
@@ -86,6 +88,30 @@ const ImageCaption = styled.div`
   gap: 8px;
   flex-wrap: wrap;
   margin-top: 14px;
+`;
+
+const GalleryStrip = styled.div`
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+`;
+
+const GalleryThumb = styled.button`
+  position: relative;
+  width: 66px;
+  height: 66px;
+  border-radius: ${radii.sm};
+  overflow: hidden;
+  border: 2px solid ${({ $active }) => ($active ? colors.copper : colors.line)};
+  background: #fff;
+  cursor: pointer;
+  padding: 0;
+
+  &:focus-visible {
+    outline: 2px solid ${colors.forest};
+    outline-offset: 2px;
+  }
 `;
 
 const Title = styled.h1`
@@ -270,7 +296,7 @@ const SupportCard = styled.div`
   h3 {
     font-family: ${fonts.display};
     font-size: 22px;
-    color: #F9F6EE;
+    color: #F6F6FF;
     font-weight: 500;
     letter-spacing: -0.02em;
   }
@@ -293,14 +319,54 @@ const SupportCard = styled.div`
 export default function ProductDetailPage() {
   const params = useParams();
   const whatsapp = useDemoStore((state) => state.settings.whatsapp);
-  const product = products.find((item) => item.slug === params.slug);
+  const cmsProducts = useDemoStore((state) => state.cmsProducts);
+  const slug = Array.isArray(params?.slug) ? params.slug[0] : params?.slug;
+  const product = useMemo(() => getProduct(cmsProducts, catalogProducts, slug), [cmsProducts, slug]);
+  const publishedList = useMemo(
+    () => mergeProducts(cmsProducts, catalogProducts).filter((item) => item.published),
+    [cmsProducts]
+  );
+  const [activeImage, setActiveImage] = useState(0);
 
-  if (!product) notFound();
+  useEffect(() => {
+    if (!product?.seoTitle) return undefined;
+    const previousTitle = document.title;
+    document.title = product.seoTitle;
+    const meta = document.querySelector('meta[name="description"]');
+    const previousDescription = meta?.getAttribute('content') ?? null;
+    if (product.seoDescription && meta) meta.setAttribute('content', product.seoDescription);
+    return () => {
+      document.title = previousTitle;
+      if (meta && previousDescription !== null) meta.setAttribute('content', previousDescription);
+    };
+  }, [product]);
 
-  const related = products.filter((item) => product.related?.includes(item.slug)).slice(0, 3);
+  if (!product || !product.published) notFound();
+
+  const gallery = [product.image, ...(product.gallery || [])].filter(
+    (src, index, list) => src && list.indexOf(src) === index
+  );
+  const activeSrc = gallery[Math.min(activeImage, gallery.length - 1)] || product.image;
+
+  const related = (
+    product.related?.length
+      ? publishedList.filter((item) => product.related.includes(item.slug))
+      : publishedList.filter((item) => item.category === product.category && item.slug !== product.slug)
+  ).slice(0, 3);
   const whatsappHref = `https://wa.me/${String(whatsapp.number).replace(/[^0-9]/g, '')}?text=${encodeURIComponent(
     `Hi Stark Packmate, I'd like to discuss ${product.name} for my brand.`
   )}`;
+
+  const splitFigure = (value) => {
+    const match = String(value || '').match(/^([\d.,–-]+)\s*(.*)$/);
+    return match ? { figure: match[1], note: match[2] } : { figure: value || '—', note: '' };
+  };
+  const moq = splitFigure(product.moq);
+  const lead = splitFigure(product.turnaround);
+  const featureCards = product.features.length
+    ? product.features
+    : product.specs.slice(0, 4).map((spec) => ({ icon: 'ruler', title: spec.label, description: spec.value }));
+  const applications = product.applications.length ? product.applications : ['Custom structures'];
 
   const downloadSpecs = () => {
     downloadCSV(
@@ -332,13 +398,28 @@ export default function ProductDetailPage() {
             <div>
               <ProductImage $ratio="4 / 3.7">
                 <Image
-                  src={product.image}
+                  src={activeSrc}
                   alt={product.imageAlt}
                   fill
                   priority
                   sizes="(max-width: 900px) 92vw, 46vw"
                 />
               </ProductImage>
+              {gallery.length > 1 ? (
+                <GalleryStrip>
+                  {gallery.map((src, index) => (
+                    <GalleryThumb
+                      key={src}
+                      type="button"
+                      $active={index === Math.min(activeImage, gallery.length - 1)}
+                      onClick={() => setActiveImage(index)}
+                      aria-label={`Show image ${index + 1}`}
+                    >
+                      <Image src={src} alt="" fill sizes="66px" style={{ objectFit: 'cover' }} />
+                    </GalleryThumb>
+                  ))}
+                </GalleryStrip>
+              ) : null}
               <ImageCaption>
                 {product.badges.map((badge) => (
                   <Pill key={badge}>{badge}</Pill>
@@ -356,18 +437,18 @@ export default function ProductDetailPage() {
               <PriceBand>
                 <div>
                   <p>Starting at</p>
-                  <strong>₹{product.startingAt}</strong>
-                  <span>per {product.unit} · ex-works</span>
+                  <strong>{product.startingAt ? `₹${product.startingAt}` : 'On brief'}</strong>
+                  <span>{product.startingAt ? `per ${product.unit} · ex-works` : 'quoted per specification'}</span>
                 </div>
                 <div>
                   <p>Minimum order</p>
-                  <strong>{product.moq.split(' ')[0]}</strong>
-                  <span>{product.moq.split(' ').slice(1).join(' ')}</span>
+                  <strong>{moq.figure}</strong>
+                  <span>{moq.note || 'per SKU'}</span>
                 </div>
                 <div>
                   <p>Lead time</p>
-                  <strong>{product.turnaround.split(' ')[0]}</strong>
-                  <span>{product.turnaround.split(' ').slice(1).join(' ')}</span>
+                  <strong>{lead.figure}</strong>
+                  <span>{lead.note || 'production'}</span>
                 </div>
               </PriceBand>
 
@@ -429,7 +510,7 @@ export default function ProductDetailPage() {
           />
           <div style={{ height: 32 }} />
           <Grid $cols={4} $colsLg={2} $gap="14px">
-            {product.features.map((feature) => (
+            {featureCards.map((feature) => (
               <FeatureCard key={feature.title}>
                 <IconBadge>
                   <SiteIcon name={feature.icon} size={19} />
@@ -461,7 +542,7 @@ export default function ProductDetailPage() {
               <SideCard>
                 <h3>Typical applications</h3>
                 <ApplicationList>
-                  {product.applications.map((application) => (
+                  {applications.map((application) => (
                     <Pill key={application}>{application}</Pill>
                   ))}
                 </ApplicationList>

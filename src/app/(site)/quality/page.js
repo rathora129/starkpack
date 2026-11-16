@@ -12,6 +12,7 @@ import {
   qualityQuote,
 } from '@/data/catalog';
 import { colors, fonts, radii, shadows, transitions } from '@/lib/theme';
+import { usePageSections } from '@/hooks/usePageSections';
 import {
   Container,
   Section,
@@ -29,6 +30,7 @@ import {
   CTABand,
   BandActions,
 } from '@/components/site/ui';
+import { CmsPageFlow, CmsSection } from '@/components/site/CmsPageFlow';
 
 const CertGrid = styled.div`
   display: grid;
@@ -55,7 +57,7 @@ const CertCard = styled.article`
   transition: border-color ${transitions.fast}, transform ${transitions.fast};
 
   &:hover {
-    border-color: #D6CFC0;
+    border-color: #C9CBE0;
     transform: translateY(-2px);
   }
 
@@ -114,7 +116,7 @@ const TestHead = styled.div`
   grid-template-columns: 1fr 0.8fr 1.6fr;
   gap: 16px;
   padding: 12px 18px;
-  background: #FBFAF6;
+  background: #FAFAFD;
   border-bottom: 1px solid ${colors.lineSoft};
   font-size: 9px;
   font-weight: 800;
@@ -292,8 +294,31 @@ const LabImage = styled(ImageFrame)`
 `;
 
 export default function QualityPage() {
+  const { section } = usePageSections('/quality');
+  const hero = section('hero', {
+    kicker: 'Quality & compliance',
+    title: 'Quality is a system, not a promise.',
+    body: 'Certified processes, calibrated equipment and a laboratory that treats every new structure as a hypothesis to be tested. This is how 120 million boxes leave without surprises.',
+  });
+  const certifications = section('certifications', {
+    kicker: 'Certifications',
+    title: 'Audited by the bodies your customers trust.',
+    body: 'Certificates are current and available on request with the relevant scope statements.',
+  });
+  const laboratory = section('laboratory', {
+    kicker: 'Laboratory',
+    title: 'Six tests that decide whether a pack ships.',
+    body: 'New structures and production samples are measured against the specification, not against a feeling.',
+  });
+  const gates = section('gates', {
+    kicker: 'Process control',
+    title: 'Five gates between a reel and a dispatched pallet.',
+    body: 'Each gate has an owner, a record and a release decision. Nothing moves forward on assumption.',
+  });
+
   return (
-    <>
+    <CmsPageFlow slug="/quality" knownKeys={['hero', 'certifications', 'laboratory', 'gates', 'documents']}>
+      <CmsSection sectionKey="hero">
       <PageIntro>
         <Container>
           <Breadcrumb>
@@ -301,12 +326,9 @@ export default function QualityPage() {
             <span>/</span>
             Quality
           </Breadcrumb>
-          <Kicker>Quality & compliance</Kicker>
-          <IntroTitle>Quality is a system, not a promise.</IntroTitle>
-          <IntroLede>
-            Certified processes, calibrated equipment and a laboratory that treats every new structure as a
-            hypothesis to be tested. This is how 120 million boxes leave without surprises.
-          </IntroLede>
+          <Kicker>{hero.kicker}</Kicker>
+          <IntroTitle>{hero.title}</IntroTitle>
+          <IntroLede>{hero.body}</IntroLede>
           <div style={{ marginTop: 26, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
             <Cta href="/request-a-quote" variant="primary" size="md">
               Request a sample pack <ArrowRight size={14} />
@@ -327,13 +349,15 @@ export default function QualityPage() {
           </div>
         </Container>
       </PageIntro>
+      </CmsSection>
 
+      <CmsSection sectionKey="certifications">
       <Section>
         <Container>
           <SectionHead
-            kicker="Certifications"
-            title="Audited by the bodies your customers trust."
-            lede="Certificates are current and available on request with the relevant scope statements."
+            kicker={certifications.kicker}
+            title={certifications.title}
+            lede={certifications.body}
             action={
               <Pill>
                 <ShieldCheck size={10} /> Bureau Veritas audited
@@ -354,13 +378,15 @@ export default function QualityPage() {
           </CertGrid>
         </Container>
       </Section>
+      </CmsSection>
 
+      <CmsSection sectionKey="laboratory">
       <Section $tone="white">
         <Container>
           <SectionHead
-            kicker="Laboratory"
-            title="Six tests that decide whether a pack ships."
-            lede="New structures and production samples are measured against the specification, not against a feeling."
+            kicker={laboratory.kicker}
+            title={laboratory.title}
+            lede={laboratory.body}
             action={
               <Pill $tone="copper">
                 <Beaker size={10} /> 48-hour lab turnaround
@@ -383,13 +409,15 @@ export default function QualityPage() {
           </TestTable>
         </Container>
       </Section>
+      </CmsSection>
 
+      <CmsSection sectionKey="gates">
       <Section $tone="paper">
         <Container>
           <SectionHead
-            kicker="Process control"
-            title="Five gates between a reel and a dispatched pallet."
-            lede="Each gate has an owner, a record and a release decision. Nothing moves forward on assumption."
+            kicker={gates.kicker}
+            title={gates.title}
+            lede={gates.body}
             flush
           />
           <div style={{ height: 30 }} />
@@ -430,7 +458,9 @@ export default function QualityPage() {
           </QuoteSplit>
         </Container>
       </Section>
+      </CmsSection>
 
+      <CmsSection sectionKey="documents">
       <Section $tone="paper" $tight>
         <Container>
           <CTABand>
@@ -450,6 +480,7 @@ export default function QualityPage() {
           </CTABand>
         </Container>
       </Section>
-    </>
+      </CmsSection>
+    </CmsPageFlow>
   );
 }

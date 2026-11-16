@@ -64,10 +64,12 @@ import {
   formatNumber,
   initialsOf,
   statusTone,
-  timeAgo,
 } from '@/lib/format';
+import RelativeTime from '@/components/ui/RelativeTime';
+import { useHydrated } from '@/hooks/useHydrated';
 import { colors, fonts, radii, shadows, transitions } from '@/lib/theme';
 import { Button, StatusChip, ProgressTrack, ProgressFill, Divider, Avatar } from '@/components/ui/primitives';
+import Logo from '@/components/brand/Logo';
 import {
   AppModal,
   Drawer,
@@ -153,7 +155,7 @@ const PortalTop = styled.header`
   top: 0;
   z-index: 40;
   background: ${({ $embedded }) => ($embedded ? colors.cream : `linear-gradient(120deg, #123229 0%, ${colors.forest} 68%, #1C5243 100%)`)};
-  color: ${({ $embedded }) => ($embedded ? colors.ink : '#F9F6EE')};
+  color: ${({ $embedded }) => ($embedded ? colors.ink : '#F6F6FF')};
   border-bottom: 1px solid ${({ $embedded }) => ($embedded ? colors.line : 'rgba(255,255,255,0.08)')};
   box-shadow: ${({ $embedded }) => ($embedded ? 'none' : '0 10px 30px rgba(9, 27, 22, 0.16)')};
 `;
@@ -170,22 +172,6 @@ const TopInner = styled.div`
     padding: 10px 14px;
     gap: 10px;
   }
-`;
-
-const BrandMark = styled.div`
-  width: 38px;
-  height: 38px;
-  flex: 0 0 auto;
-  border-radius: 11px;
-  display: grid;
-  place-items: center;
-  background: ${({ $embedded }) => ($embedded ? colors.forest : colors.copper)};
-  color: #fff;
-  font-family: ${fonts.display};
-  font-size: 17px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  box-shadow: ${({ $embedded }) => ($embedded ? 'none' : '0 6px 16px rgba(0,0,0,0.18)')};
 `;
 
 const BrandText = styled.div`
@@ -212,16 +198,6 @@ const BrandText = styled.div`
     strong {
       font-size: 11px;
     }
-  }
-`;
-
-const TopDivider = styled.span`
-  width: 1px;
-  height: 26px;
-  background: ${({ $embedded }) => ($embedded ? colors.line : 'rgba(255,255,255,0.18)')};
-
-  @media (max-width: 860px) {
-    display: none;
   }
 `;
 
@@ -258,7 +234,7 @@ const IconGhost = styled.button`
   place-items: center;
   border: 1px solid ${({ $embedded }) => ($embedded ? colors.line : 'rgba(255,255,255,0.18)')};
   background: ${({ $embedded }) => ($embedded ? '#fff' : 'rgba(255,255,255,0.08)')};
-  color: ${({ $embedded }) => ($embedded ? colors.inkSoft : '#F9F6EE')};
+  color: ${({ $embedded }) => ($embedded ? colors.inkSoft : '#F6F6FF')};
   transition: background ${transitions.fast}, transform ${transitions.fast};
 
   &:hover {
@@ -444,7 +420,7 @@ const Hero = styled.section`
   overflow: hidden;
   border-radius: ${radii.xl};
   background: linear-gradient(128deg, #12392F 0%, #0B241D 62%, #143C31 100%);
-  color: #F9F6EE;
+  color: #F6F6FF;
   padding: 30px 30px 26px;
   display: grid;
   grid-template-columns: minmax(0, 1.5fr) minmax(280px, 0.8fr);
@@ -502,7 +478,7 @@ const HeroCopy = styled.div`
     font-weight: 500;
     line-height: 1.12;
     letter-spacing: -0.02em;
-    color: #FBF8F2;
+    color: #FBFBFE;
   }
 
   p {
@@ -580,7 +556,7 @@ const HeroMiniItem = styled.div`
     margin-top: 3px;
     font-size: 12px;
     font-weight: 700;
-    color: #F9F6EE;
+    color: #F6F6FF;
   }
 `;
 
@@ -1844,6 +1820,7 @@ const ProofModalImage = styled.div`
 /* ------------------------------------------------------------------ */
 
 export default function PortalWorkspace({ embedded = false, initialTab = 'overview', onSignOut = null }) {
+  const hydrated = useHydrated();
   const [tab, setTab] = useState(initialTab);
   const [notifOpen, setNotifOpen] = useState(false);
   const [rfqOpen, setRfqOpen] = useState(false);
@@ -2224,7 +2201,6 @@ export default function PortalWorkspace({ embedded = false, initialTab = 'overvi
     workflowArtwork,
     workflowInvoice,
     linkedStock,
-    quoteDeclined,
     abcOrders,
     abcInvoices,
     campaign,
@@ -2421,13 +2397,8 @@ export default function PortalWorkspace({ embedded = false, initialTab = 'overvi
     <PortalRoot $embedded={embedded}>
       <PortalTop $embedded={embedded}>
         <TopInner>
-          <BrandMark $embedded={embedded}>SP</BrandMark>
-          <BrandText $embedded={embedded}>
-            <strong>Stark Packmate</strong>
-            <span>Customer portal</span>
-          </BrandText>
-          <TopDivider $embedded={embedded} />
-          <BrandText $embedded={embedded} style={{ opacity: 0.8 }}>
+          <Logo inverse size="sm" href={embedded ? '/admin/portal' : '/portal'} />
+          <BrandText $embedded={embedded} style={{ marginLeft: 2 }}>
             <strong>{customer?.company || ABC_COMPANY}</strong>
             <span>Account {customer?.id || ABC_CUSTOMER_ID} · {customer?.paymentTerms || 'Net 30'}</span>
           </BrandText>
@@ -2505,7 +2476,9 @@ export default function PortalWorkspace({ embedded = false, initialTab = 'overvi
                 <small>
                   <Sparkles size={11} /> {customer?.company || ABC_COMPANY} · {customer?.segment || 'Food & beverage'}
                 </small>
-                <h1>{greeting()}, {(customer?.contact || 'Ritu Bansal').split(' ')[0]}.</h1>
+                <h1>
+                  {hydrated ? greeting() : 'Hello'}, {(customer?.contact || 'Ritu Bansal').split(' ')[0]}.
+                </h1>
                 <p>
                   {workflowOrder
                     ? `Your ${workflowOrder.id} order is ${workflowOrder.status.toLowerCase()}${workflowJob ? ` at the ${workflowJob.stage.toLowerCase()} stage` : ''}. ${nextProof ? 'A proof is waiting for your approval.' : nextInvoice ? `Invoice ${nextInvoice.id} is ready in the portal.` : 'Everything is on track.'}`
@@ -2524,14 +2497,14 @@ export default function PortalWorkspace({ embedded = false, initialTab = 'overvi
                       <Palette size={13} /> Review proof
                     </Button>
                   ) : null}
-                  <Button $variant="ghost" $size="sm" style={{ color: '#F3EFE4' }} onClick={() => goto('orders')}>
+                  <Button $variant="ghost" $size="sm" style={{ color: '#EDEDF6' }} onClick={() => goto('orders')}>
                     <Truck size={13} /> Track orders
                   </Button>
                 </HeroActions>
               </HeroCopy>
               <HeroPanel>
                 <HeroPanelHead>
-                  <Avatar $size="md" $bg="rgba(255,255,255,0.14)" $color="#F9F6EE">
+                  <Avatar $size="md" $bg="rgba(255,255,255,0.14)" $color="#F6F6FF">
                     {initialsOf(customer?.owner || 'Neha Joshi')}
                   </Avatar>
                   <div>
@@ -2738,7 +2711,9 @@ export default function PortalWorkspace({ embedded = false, initialTab = 'overvi
                       <UpdateBody>
                         <strong>{entry.title}</strong>
                         <p>{entry.body}</p>
-                        <small>{timeAgo(entry.time)}</small>
+                        <small>
+                          <RelativeTime value={entry.time} />
+                        </small>
                       </UpdateBody>
                     </UpdateRow>
                   ))}

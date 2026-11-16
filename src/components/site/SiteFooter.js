@@ -4,7 +4,6 @@ import styled from 'styled-components';
 import Link from 'next/link';
 import {
   ArrowRight,
-  ArrowUpRight,
   Phone,
   Mail,
   MapPin,
@@ -51,7 +50,7 @@ const TopBand = styled.div`
   z-index: 1;
 
   h2 {
-    color: #F9F6EE;
+    color: #F6F6FF;
     font-size: clamp(30px, 4vw, 48px);
     letter-spacing: -0.03em;
     max-width: 620px;
@@ -86,6 +85,20 @@ const Columns = styled.div`
   @media (max-width: 760px) {
     grid-template-columns: 1fr 1fr;
     gap: 28px;
+  }
+
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+const ContactRow = styled(Columns)`
+  grid-template-columns: 1.1fr 1fr 1fr 1.6fr;
+  padding-top: 0;
+
+  @media (max-width: 1000px) {
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 28px;
   }
 
   @media (max-width: 480px) {
@@ -154,7 +167,7 @@ const Col = styled.div`
     width: fit-content;
 
     &:hover {
-      color: #F9F6EE;
+      color: #F6F6FF;
       transform: translateX(2px);
     }
   }
@@ -176,7 +189,7 @@ const ContactLine = styled.a`
   }
 
   &:hover {
-    color: #F9F6EE;
+    color: #F6F6FF;
   }
 `;
 
@@ -313,7 +326,7 @@ export default function SiteFooter() {
           </div>
         </Columns>
 
-        <Columns style={{ gridTemplateColumns: '1.1fr 1fr 1fr 1.6fr', paddingTop: 0 }}>
+        <ContactRow>
           <ContactLine href={`tel:${contact.phone.replace(/[^+0-9]/g, '')}`}>
             <Phone size={12} /> {contact.phone}
           </ContactLine>
@@ -326,7 +339,7 @@ export default function SiteFooter() {
           <ContactLine as="span">
             <MapPin size={12} /> {contact.address}
           </ContactLine>
-        </Columns>
+        </ContactRow>
 
         <Bottom>
           <div>
@@ -339,9 +352,6 @@ export default function SiteFooter() {
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
               <MapPin size={10} /> Mumbai · Pune · Chennai
             </span>
-            <Link href="/admin">
-              Admin demo <ArrowUpRight size={10} />
-            </Link>
           </div>
         </Bottom>
       </Container>

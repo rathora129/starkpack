@@ -2,16 +2,18 @@
 
 import { useEffect, useState } from 'react';
 import styled from 'styled-components';
-import { usePathname } from 'next/navigation';
-import { FlaskConical, RotateCcw } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
+import { FlaskConical, RotateCcw, ShieldAlert } from 'lucide-react';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
 import GlobalSearch from './GlobalSearch';
 import { useUiStore, notify } from '@/store/useUiStore';
 import { useDemoStore } from '@/store/useDemoStore';
+import { useAuthStore } from '@/store/useAuthStore';
+import { canAccess, demoRoleById } from '@/lib/nav';
 import { colors, fonts, transitions } from '@/lib/theme';
 import { ConfirmDialog } from '@/components/ui/Overlay';
-import { Button } from '@/components/ui/primitives';
+import { ButtonLink } from '@/components/ui/primitives';
 
 const Shell = styled.div`
   min-height: 100vh;
@@ -119,7 +121,7 @@ const Scrim = styled.div`
     position: fixed;
     inset: 0;
     z-index: 70;
-    background: rgba(9, 26, 21, 0.5);
+    background: rgba(13, 10, 51, 0.55);
     opacity: ${({ $open }) => ($open ? 1 : 0)};
     pointer-events: ${({ $open }) => ($open ? 'auto' : 'none')};
     backdrop-filter: blur(2px);
@@ -127,13 +129,82 @@ const Scrim = styled.div`
   }
 `;
 
+const Boot = styled.div`
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: ${colors.cream};
+  color: ${colors.muted};
+  font-family: ${fonts.sans};
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+`;
+
+const GateCard = styled.div`
+  width: 100%;
+  max-width: 430px;
+  padding: 30px 26px;
+  border: 1px solid ${colors.line};
+  border-radius: 16px;
+  background: ${colors.surface};
+  box-shadow: 0 24px 60px -28px rgba(13, 10, 51, 0.35);
+  text-align: center;
+
+  span {
+    display: inline-grid;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    background: ${colors.warningBg};
+    color: ${colors.warning};
+    margin-bottom: 14px;
+  }
+
+  h1 {
+    font-family: ${fonts.display};
+    font-size: 24px;
+    letter-spacing: -0.02em;
+  }
+
+  p {
+    margin-top: 8px;
+    font-size: 12px;
+    line-height: 1.65;
+    color: ${colors.muted};
+  }
+
+  div {
+    margin-top: 18px;
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+`;
+
 export default function DashboardShell({ children }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const session = useAuthStore((state) => state.session);
   const mobileNavOpen = useUiStore((state) => state.mobileNavOpen);
   const setMobileNavOpen = useUiStore((state) => state.setMobileNavOpen);
   const setCommandOpen = useUiStore((state) => state.setCommandOpen);
   const commandOpen = useUiStore((state) => state.commandOpen);
   const [resetOpen, setResetOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+    if (!session) router.replace('/workspace-access');
+    else if (session.role === 'customer') router.replace('/portal');
+  }, [mounted, session, router]);
 
   useEffect(() => {
     setMobileNavOpen(false);
@@ -184,6 +255,33 @@ export default function DashboardShell({ children }) {
     setResetOpen(false);
     notify('Demo data restored', 'All modules have been reset to the original presentation dataset.', 'success');
   };
+
+  if (!mounted) return <Boot>Loading workspace…</Boot>;
+  if (!session) return <Boot>Redirecting to workspace access…</Boot>;
+  if (session.role === 'customer') return <Boot>Opening customer portal…</Boot>;
+
+  if (!canAccess(session.role, pathname)) {
+    return (
+      <Boot>
+        <GateCard>
+          <span><ShieldAlert size={20} /></span>
+          <h1>Not available for this role</h1>
+          <p>
+            The {demoRoleById(session.role).label} demo role does not include this module. Sign out and
+            choose another role to explore it, or return to the role home.
+          </p>
+          <div>
+            <ButtonLink href={demoRoleById(session.role).home} $variant="primary" $size="sm">
+              Go to {demoRoleById(session.role).label} home
+            </ButtonLink>
+            <ButtonLink href="/workspace-access" $variant="light" $size="sm">
+              Switch demo role
+            </ButtonLink>
+          </div>
+        </GateCard>
+      </Boot>
+    );
+  }
 
   return (
     <Shell>

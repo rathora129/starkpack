@@ -29,6 +29,7 @@ import {
   capabilities,
 } from '@/data/catalog';
 import { useDemoStore } from '@/store/useDemoStore';
+import { publishedProducts } from '@/lib/products';
 import { colors, fonts, radii, shadows, transitions } from '@/lib/theme';
 import {
   Container,
@@ -56,6 +57,7 @@ import {
   Grid,
   SiteIcon,
 } from '@/components/site/ui';
+import { CmsPageFlow, CmsSection } from '@/components/site/CmsPageFlow';
 
 const Hero = styled.section`
   position: relative;
@@ -170,7 +172,7 @@ const AvatarStack = styled.div`
     display: grid;
     place-items: center;
     background: ${colors.forest};
-    color: #F9F6EE;
+    color: #F6F6FF;
     font-size: 9px;
     font-weight: 700;
     border: 2px solid ${colors.cream};
@@ -861,7 +863,7 @@ const ListAvatar = styled.span`
   font-size: 9.5px;
   font-weight: 800;
   background: ${({ $active }) => ($active ? colors.forest : colors.paper)};
-  color: ${({ $active }) => ($active ? '#F9F6EE' : colors.muted)};
+  color: ${({ $active }) => ($active ? '#F6F6FF' : colors.muted)};
   border: 1px solid ${colors.lineSoft};
 `;
 
@@ -875,18 +877,11 @@ export default function HomePage() {
   const publishedTestimonials = cmsTestimonials.filter((item) => item.published);
   const testimonialList = publishedTestimonials.length ? publishedTestimonials : catalogTestimonials;
 
-  const publishedProducts = cmsProducts.filter((item) => item.published);
-  const featuredSource = publishedProducts.filter((item) => item.featured).length
-    ? publishedProducts.filter((item) => item.featured)
-    : publishedProducts;
-  const featuredProducts = featuredSource
-    .map((item) => {
-      const catalogItem = catalogProducts.find((product) => product.slug === item.slug);
-      return catalogItem ? { ...catalogItem, cmsBadge: item.badge } : null;
-    })
-    .filter(Boolean)
-    .slice(0, 4);
-  const homeProducts = featuredProducts.length ? featuredProducts : catalogProducts.slice(0, 4);
+  const visibleProducts = publishedProducts(cmsProducts, catalogProducts);
+  const featuredSource = visibleProducts.some((item) => item.featured)
+    ? visibleProducts.filter((item) => item.featured)
+    : visibleProducts;
+  const homeProducts = featuredSource.slice(0, 4);
 
   const banner = cmsBanners.find((item) => item.placement === 'Homepage' && item.status === 'Published');
   const featuredSolutions = [solutions[0], solutions[1], solutions[4]].filter(Boolean);
@@ -898,7 +893,8 @@ export default function HomePage() {
   };
 
   return (
-    <>
+    <CmsPageFlow slug="/" knownKeys={['hero', 'clients', 'why', 'products', 'solutions', 'manufacturing', 'quality', 'portfolio', 'testimonials', 'cta']}>
+      <CmsSection sectionKey="hero">
       <Hero>
         <Container>
           <HeroGrid>
@@ -990,7 +986,7 @@ export default function HomePage() {
                   <Sparkles size={10} /> {banner.theme === 'Forest' ? 'New' : 'Featured'}
                 </Pill>
                 <div>
-                  <p style={{ fontFamily: fonts.sans, fontSize: 13, fontWeight: 800, color: banner.theme === 'Forest' ? '#F9F6EE' : colors.ink, letterSpacing: 0 }}>
+                  <p style={{ fontFamily: fonts.sans, fontSize: 13, fontWeight: 800, color: banner.theme === 'Forest' ? '#F6F6FF' : colors.ink, letterSpacing: 0 }}>
                     {banner.title}
                   </p>
                   <p style={{ marginTop: 2, fontSize: 11.5, color: banner.theme === 'Forest' ? 'rgba(249,246,238,0.72)' : colors.muted, letterSpacing: 0 }}>
@@ -1005,7 +1001,9 @@ export default function HomePage() {
           </Container>
         </section>
       ) : null}
+      </CmsSection>
 
+      <CmsSection sectionKey="clients">
       <Section $tone="paper" $tight>
         <Container>
           <LogoStrip>
@@ -1016,7 +1014,9 @@ export default function HomePage() {
           </LogoStrip>
         </Container>
       </Section>
+      </CmsSection>
 
+      <CmsSection sectionKey="why">
       <Section>
         <Container>
           <SectionHead
@@ -1042,7 +1042,9 @@ export default function HomePage() {
           </ValuesGrid>
         </Container>
       </Section>
+      </CmsSection>
 
+      <CmsSection sectionKey="products">
       <Section $tone="white">
         <Container>
           <SectionHead
@@ -1065,14 +1067,20 @@ export default function HomePage() {
                     fill
                     sizes="(max-width: 680px) 92vw, (max-width: 1024px) 45vw, 24vw"
                   />
-                  <ProductTag>{product.cmsBadge || product.category}</ProductTag>
+                  <ProductTag>{product.badge || product.category}</ProductTag>
                 </ProductMedia>
                 <ProductBody>
                   <h3>{product.shortName}</h3>
                   <p>{product.tagline}</p>
                   <ProductMeta>
                     <span>
-                      From <strong>₹{product.startingAt}</strong> / {product.unit}
+                      {product.startingAt ? (
+                        <>
+                          From <strong>₹{product.startingAt}</strong> / {product.unit}
+                        </>
+                      ) : (
+                        'Priced per brief'
+                      )}
                     </span>
                     <ArrowUpRight size={14} />
                   </ProductMeta>
@@ -1082,7 +1090,9 @@ export default function HomePage() {
           </Grid>
         </Container>
       </Section>
+      </CmsSection>
 
+      <CmsSection sectionKey="solutions">
       <Section $tone="forest">
         <Container>
           <SectionHead
@@ -1124,7 +1134,9 @@ export default function HomePage() {
           </Grid>
         </Container>
       </Section>
+      </CmsSection>
 
+      <CmsSection sectionKey="manufacturing">
       <Section>
         <Container>
           <TwoCol $cols="minmax(0, 0.92fr) minmax(0, 1.08fr)" $gap="54px">
@@ -1176,7 +1188,9 @@ export default function HomePage() {
           </TwoCol>
         </Container>
       </Section>
+      </CmsSection>
 
+      <CmsSection sectionKey="quality">
       <Section $tone="paper">
         <Container>
           <SectionHead
@@ -1232,7 +1246,9 @@ export default function HomePage() {
           </QualityGrid>
         </Container>
       </Section>
+      </CmsSection>
 
+      <CmsSection sectionKey="portfolio">
       {home.showPortfolio ? (
         <Section $tone="white">
           <Container>
@@ -1276,7 +1292,9 @@ export default function HomePage() {
           </Container>
         </Section>
       ) : null}
+      </CmsSection>
 
+      <CmsSection sectionKey="testimonials">
       {home.showTestimonials ? (
         <Section>
           <Container>
@@ -1333,7 +1351,9 @@ export default function HomePage() {
           </Container>
         </Section>
       ) : null}
+      </CmsSection>
 
+      <CmsSection sectionKey="cta">
       <Section $tone="paper" style={{ paddingTop: 0 }}>
         <Container style={{ paddingTop: 0 }}>
           <CTABand>
@@ -1358,6 +1378,7 @@ export default function HomePage() {
           </CTABand>
         </Container>
       </Section>
-    </>
+      </CmsSection>
+    </CmsPageFlow>
   );
 }

@@ -101,6 +101,14 @@ export default function CustomPage() {
   }
 
   const paragraphs = String(page.body || '').split(/\n{2,}/).filter(Boolean);
+  const sections = [...(page.sections || [])]
+    .filter((section) => section.enabled !== false)
+    .sort((a, b) => (a.order || 0) - (b.order || 0));
+  const hero = sections.find((section) => section.key === 'hero');
+  const cta = sections.find((section) => section.type === 'CTA band');
+  const bodySections = sections.filter(
+    (section) => section.key !== 'hero' && section.type !== 'CTA band'
+  );
 
   return (
     <Section $tone="cream" $tight>
@@ -111,19 +119,42 @@ export default function CustomPage() {
           {page.title}
         </Breadcrumb>
         <Head>
-          <Kicker>{page.type === 'Custom' ? 'Insight' : 'Stark Packmate'}</Kicker>
-          <h1>{page.title}</h1>
-          {page.intro ? <p className="intro">{page.intro}</p> : null}
+          <Kicker>{hero?.kicker || (page.type === 'Custom' ? 'Insight' : 'Stark Packmate')}</Kicker>
+          <h1>{hero?.title || page.title}</h1>
+          {hero?.body || page.intro ? <p className="intro">{hero?.body || page.intro}</p> : null}
         </Head>
         <Body>
-          {paragraphs.map((paragraph, index) => (
-            <p key={index}>{paragraph}</p>
-          ))}
+          {bodySections.length
+            ? bodySections.map((section) => (
+                <div key={section.id} style={{ marginBottom: 18 }}>
+                  {section.title ? (
+                    <h2
+                      style={{
+                        marginBottom: 8,
+                        fontFamily: fonts.display,
+                        fontSize: 24,
+                        fontWeight: 500,
+                        letterSpacing: '-0.02em',
+                        color: colors.ink,
+                      }}
+                    >
+                      {section.title}
+                    </h2>
+                  ) : null}
+                  {String(section.body || '')
+                    .split(/\n{2,}/)
+                    .filter(Boolean)
+                    .map((paragraph, index) => (
+                      <p key={index}>{paragraph}</p>
+                    ))}
+                </div>
+              ))
+            : paragraphs.map((paragraph, index) => <p key={index}>{paragraph}</p>)}
         </Body>
         <Foot>
           <span style={{ fontSize: 10.5, color: colors.faint }}>Updated {formatDate(page.updated)}</span>
-          <Cta href="/request-a-quote" variant="copper" size="md">
-            <Sparkles size={14} /> Start a packaging brief
+          <Cta href={cta?.ctaHref || '/request-a-quote'} variant="copper" size="md">
+            <Sparkles size={14} /> {cta?.ctaLabel || 'Start a packaging brief'}
           </Cta>
         </Foot>
       </Container>
